@@ -1,0 +1,1 @@
+const rename=()=>{const b=document.querySelector('[data-tab="ledger"]');if(b&&b.textContent!=='出入金/轉帳登記')b.textContent='出入金/轉帳登記';};new MutationObserver(rename).observe(document.documentElement,{childList:true,subtree:true});rename();
