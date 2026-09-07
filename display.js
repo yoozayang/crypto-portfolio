@@ -1,5 +1,5 @@
-import {reconciledPortfolio,planMetrics,marketValue} from './calculations.js';
-import {saveState,exportBackup,importBackup,resetState} from './records.js';
+import {reconciledPortfolio,planMetrics,marketValue} from './calculations.js?v=20260907-1130';
+import {saveState,exportBackup,importBackup,resetState} from './records.js?v=20260907-1130';
 
 const fmt=(n,d=2)=>Number.isFinite(+n)?(+n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const qty=n=>Number.isFinite(+n)?(+n).toLocaleString('en-US',{maximumFractionDigits:8}):'—';
