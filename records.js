@@ -1,10 +1,18 @@
 export const STORAGE_KEY='cryptoPortfolioV1';
 
 export async function loadSeed(){
-  const [data,labels]=await Promise.all([
-    fetch('./portfolio-data.json?v=20260907-1130',{cache:'no-store'}).then(r=>r.json()),
-    fetch('./ui-labels.json?v=20260907-1130',{cache:'no-store'}).then(r=>r.json())
+  const [data,labels,baseline]=await Promise.all([
+    fetch('./portfolio-data.json?v=20260907-1140',{cache:'no-store'}).then(r=>r.json()),
+    fetch('./ui-labels.json?v=20260907-1140',{cache:'no-store'}).then(r=>r.json()),
+    fetch('./asset-baseline.json?v=20260907-1140',{cache:'no-store'}).then(r=>r.json())
   ]);
+  data.dataVersion=Math.max(+data.dataVersion||1,5);
+  data.reconciliation=data.reconciliation||{};
+  data.reconciliation.actualHoldings=data.reconciliation.actualHoldings||{};
+  data.reconciliation.actualHoldings.STABLE={value:+baseline.stable.value||0,note:baseline.stable.note,label:baseline.stable.label};
+  data.reconciliation.actualHoldings.OTHER={value:+baseline.other.value||0,note:baseline.other.note,label:baseline.other.label};
+  data.reconciliation.referenceTotal=+baseline.snapshotTotal||data.reconciliation.totalValue||0;
+  data.reconciliation.baselineNote=baseline.note;
   return {data,labels};
 }
 
