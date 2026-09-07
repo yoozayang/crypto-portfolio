@@ -1,0 +1,30 @@
+{
+  "asOf": "2026-09-07 11:27 +08:00",
+  "accounting": {
+    "firstCapital": 31664,
+    "secondOpeningAssetBaseline": 32953.46473535664
+  },
+  "holdings": {
+    "stable": {
+      "label": "USDT/USDC",
+      "value": 3085.55,
+      "note": "Binance USDC 3000.44 + USDT 32.96 + MAX 非鎖倉約 52.15"
+    },
+    "other": {
+      "label": "其他小額資產",
+      "value": 42.81,
+      "note": "SHIB 約 41.92U，加上畫面可見的極小額資產；只管理總金額，不管理數量"
+    }
+  },
+  "snapshot": {
+    "label": "2026/09/07 初始對帳",
+    "referenceTotal": 66171.46
+  },
+  "notes": {
+    "firstCapital": "第一倉期初投入本金；後續出入金另計。",
+    "secondOpeningAssetBaseline": "2026/09/07 依當日資產市值建立，不視為歷史成本。",
+    "postBaselineNetFlow": "只計期初之後真正的入金減出金。",
+    "nonTradingIncome": "Earn / Staking / 空投 / Cashback。",
+    "snapshot": "2026/09/07 初始對帳為持倉基準；後續交易、入出金、收益與轉帳疊加。referenceTotal 僅作當日對帳參考，之後總資產隨價格重新計算，不以其他資產補差額。"
+  }
+}
