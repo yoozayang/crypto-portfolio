@@ -78,7 +78,7 @@
     "export": "匯出 JSON",
     "import": "匯入 JSON",
     "reset": "恢復 Excel 初始資料",
-    "notice": "GitHub 只放程式碼與初始資料，不保存你後續新增的交易紀錄。換裝置或清除網站資料前先匯出 JSON。",
+    "notice": "GitHub 只放程式碼與初始資料。換裝置或清除網站資料前先匯出 JSON。",
     "settings": "其他設定"
   }
 }
