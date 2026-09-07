@@ -8,28 +8,14 @@
 </head>
 <body>
 <div class="wrap" id="app">
-  <div class="top">
-    <div class="title">
-      <h1>Crypto Portfolio</h1>
-      <p>交易紀錄為唯一資料來源 · 移動平均成本 · 第一倉 / 第二倉</p>
-    </div>
-    <button class="btn" id="refreshPrices">更新 Crypto 價格</button>
-  </div>
-  <div class="tabs" id="tabs">
-    <button data-tab="dashboard" class="active">Dashboard</button>
-    <button data-tab="transactions">交易紀錄</button>
-    <button data-tab="plans">投資計畫</button>
-    <button data-tab="prices">價格</button>
-    <button data-tab="backup">備份 / 設定</button>
-  </div>
+  <div class="top"><div class="title"><h1 id="appTitle">Crypto Portfolio</h1><p id="appSubtitle"></p></div><button class="btn" id="refreshPrices">更新 Crypto 價格</button></div>
+  <div class="tabs" id="tabs"><button data-tab="dashboard" class="active"></button><button data-tab="transactions"></button><button data-tab="plans"></button><button data-tab="prices"></button><button data-tab="backup"></button></div>
   <section id="dashboard" class="tab-pane"></section>
   <section id="transactions" class="tab-pane hidden"></section>
   <section id="plans" class="tab-pane hidden"></section>
   <section id="prices" class="tab-pane hidden"></section>
   <section id="backup" class="tab-pane hidden"></section>
 </div>
-<script src="./seed.js"></script>
-<script src="./bootstrap-prices.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>
