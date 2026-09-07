@@ -22,15 +22,19 @@ export function replayTransactions(state){
       pos[posKey(t.warehouse,t.asset)]=p;history.push({...t,beforeQty,beforeCost,afterQty:p.qty,afterCost:p.cost,tradeRealized,costRemoved});
       continue;
     }
-    const x=e;if(isStable(x.asset))continue;
+    const x=e;
+    if(x.type==='transfer'){
+      if(x.feeAsset&&!isStable(x.feeAsset)&&+x.feeQty>0){const fp=ensurePos(pos,x.warehouse,x.feeAsset),beforeQty=fp.qty,beforeCost=fp.cost,q=Math.min(beforeQty,+x.feeQty||0),removed=beforeQty>0?q*(beforeCost/beforeQty):0;fp.qty=Math.max(0,beforeQty-q);fp.cost=Math.max(0,beforeCost-removed);}
+      continue;
+    }
+    if(x.type==='income'&&isStable(x.asset)){const c=+x.amountU||0;incomeRealized+=c;realized+=c;continue;}
+    if(isStable(x.asset))continue;
     const p=ensurePos(pos,x.warehouse,x.asset),beforeQty=p.qty,beforeCost=p.cost;
     if(x.type==='deposit'||x.type==='income'){
       const q=+x.qty||0,c=+x.amountU||0;p.qty+=q;p.cost+=c;
       if(x.type==='income'){incomeRealized+=c;realized+=c;p.realized+=c;}
     }else if(x.type==='withdraw'){
       const q=Math.min(beforeQty,+x.qty||0),removed=beforeQty>0?q*(beforeCost/beforeQty):0;p.qty=Math.max(0,beforeQty-q);p.cost=Math.max(0,beforeCost-removed);
-    }else if(x.type==='transfer'&&x.feeAsset===x.asset&&+x.feeQty>0){
-      const q=Math.min(beforeQty,+x.feeQty||0),removed=beforeQty>0?q*(beforeCost/beforeQty):0;p.qty=Math.max(0,beforeQty-q);p.cost=Math.max(0,beforeCost-removed);
     }
   }
   return {positions:Object.values(pos),history,realized,incomeRealized};
