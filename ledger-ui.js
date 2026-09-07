@@ -79,5 +79,14 @@ function renderLedger(editId=0){
   const form=host.querySelector('#ledgerForm');form.querySelector('[name="type"]').onchange=e=>{form.querySelector('.ledger-fields').innerHTML=fieldsFor(e.target.value,state,{});};form.onsubmit=e=>{e.preventDefault();saveEntry(form);};host.querySelector('#ledgerClear').onclick=()=>renderLedger();host.querySelectorAll('[data-ledger-edit]').forEach(b=>b.onclick=()=>{if(!isUnlocked()){askUnlock();return;}renderLedger(+b.dataset.ledgerEdit);scrollTo({top:0,behavior:'smooth'});});host.querySelectorAll('[data-ledger-del]').forEach(b=>b.onclick=()=>deleteEntry(+b.dataset.ledgerDel));const sf=host.querySelector('#snapshotForm');sf.onsubmit=e=>{e.preventDefault();saveSnapshot(sf);};
 }
 
-function boot(){ensureTab();renderCapitalStrip();const observer=new MutationObserver(()=>{ensureTab();renderCapitalStrip();});observer.observe(document.querySelector('#app'),{childList:true,subtree:true});}
+function boot(){
+  ensureTab();renderCapitalStrip();
+  const app=document.querySelector('#app');if(!app)return;
+  const observer=new MutationObserver(()=>{
+    observer.disconnect();
+    ensureTab();renderCapitalStrip();
+    observer.observe(app,{childList:true,subtree:true});
+  });
+  observer.observe(app,{childList:true,subtree:true});
+}
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
