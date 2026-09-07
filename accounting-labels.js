@@ -1,5 +1,5 @@
-import {STORAGE_KEY} from './records.js?v=20260907-1430';
-import {ledgerMetrics} from './calculations.js?v=20260907-1430';
+import {STORAGE_KEY} from './records.js?v=20260907-1525';
+import {ledgerMetrics} from './calculations.js?v=20260907-1525';
 const fmt=n=>Number.isFinite(+n)?(+n).toLocaleString('en-US',{maximumFractionDigits:2}):'—';
 const load=()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch{return {}}};
 function card(label,value,note=''){return `<div class="card kpi"><div class="label">${label}</div><div class="value">${fmt(value)} U</div>${note?`<div class="subtle">${note}</div>`:''}</div>`}
