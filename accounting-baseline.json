@@ -1,0 +1,12 @@
+{
+  "asOf": "2026-09-07",
+  "firstCapital": 31664,
+  "secondOpeningAssetBaseline": 32953.46473535664,
+  "notes": {
+    "firstCapital": "第一倉期初投入本金；後續出入金另計。",
+    "secondOpeningAssetBaseline": "2026/09/07 依當日資產市值建立，不視為歷史成本。",
+    "postBaselineNetFlow": "只計期初之後真正的入金減出金。",
+    "nonTradingIncome": "Earn / Staking / 空投 / Cashback。",
+    "snapshot": "2026/09/07 初始對帳為持倉基準；後續交易、入出金、收益與轉帳疊加。"
+  }
+}
