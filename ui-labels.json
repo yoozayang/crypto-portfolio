@@ -65,7 +65,7 @@
     "action": "操作"
   },
   "prices": {
-    "notice": "Crypto 可從 Binance 自動更新；MSTR 目前採手動價。所有價格皆可覆寫。",
+    "notice": "Crypto 可從 Binance 自動更新",
     "manual": "手動 / Excel 備援值"
   },
   "backup": {
