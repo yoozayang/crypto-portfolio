@@ -55,7 +55,9 @@ function mountSortControls() {
   const card = findAllHoldingsCard();
   if (!card || card.querySelector('.holdings-sort')) return;
   const heading = card.querySelector('h2');
-  if (!heading) return;
+  const tbody = card.querySelector('table tbody');
+  if (!heading || !tbody) return;
+  const originalRows = [...tbody.rows];
 
   const toolbar = document.createElement('div');
   toolbar.className = 'toolbar holdings-sort';
@@ -80,20 +82,9 @@ function mountSortControls() {
 
   toolbar.querySelector('[data-holding-reset]').addEventListener('click', () => {
     current = { key: null, dir: 'desc' };
-    // Dashboard re-render restores the calculation/display order without touching records.
-    document.querySelector('#tabs [data-tab="dashboard"]')?.click();
-    const refresh = document.querySelector('#refreshPrices');
-    if (refresh) {
-      // Do not trigger a price fetch; just rebuild controls on the next normal dashboard render.
-      const cardNow = findAllHoldingsCard();
-      if (cardNow) {
-        const rows = [...cardNow.querySelectorAll('tbody tr')];
-        rows.sort((a,b) => Number(a.dataset.originalIndex || 0) - Number(b.dataset.originalIndex || 0));
-      }
-    }
+    originalRows.forEach(row => tbody.appendChild(row));
+    updateButtons(toolbar);
   });
-
-  [...card.querySelectorAll('tbody tr')].forEach((row, i) => row.dataset.originalIndex = i);
 }
 
 const observer = new MutationObserver(() => mountSortControls());
