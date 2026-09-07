@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Crypto Portfolio",
-    "subtitle": "交易紀錄為唯一資料來源 · 移動平均成本 · 第一倉 / 第二倉",
+    "subtitle": "",
     "refreshPrices": "更新 Crypto 價格"
   },
   "tabs": {
