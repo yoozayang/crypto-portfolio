@@ -1,4 +1,16 @@
 {
+  "app": {
+    "title": "Crypto Portfolio",
+    "subtitle": "交易紀錄為唯一資料來源 · 移動平均成本 · 第一倉 / 第二倉",
+    "refreshPrices": "更新 Crypto 價格"
+  },
+  "tabs": {
+    "dashboard": "Dashboard",
+    "transactions": "交易紀錄",
+    "plans": "投資計畫",
+    "prices": "價格",
+    "backup": "備份 / 設定"
+  },
   "dashboard": {
     "marketValue": "目前市值",
     "holdingCost": "持倉成本",
@@ -19,5 +31,54 @@
     "price": "現價U",
     "marketValue": "市值U",
     "unrealized": "未實現"
+  },
+  "plans": {
+    "target": "目標U",
+    "invested": "目前投入U",
+    "completion": "完成率",
+    "allocation": "目前投入比例",
+    "targetTotal": "目標",
+    "investedTotal": "已投入",
+    "collapse": "收合 / 展開"
+  },
+  "transactions": {
+    "formTitle": "新增 / 修改交易",
+    "warehouse": "倉位",
+    "exchange": "交易所",
+    "date": "日期",
+    "side": "買賣",
+    "asset": "幣種",
+    "price": "成交價 U",
+    "quantity": "數量",
+    "amount": "交易金額 U",
+    "feeAsset": "手續費幣種",
+    "feeQuantity": "手續費數量",
+    "costAdjustment": "賣出成本校正 U",
+    "reset": "清倉",
+    "note": "備註",
+    "save": "新增交易",
+    "saveEdit": "儲存修改",
+    "clear": "清空表單",
+    "beforeCost": "交易前成本",
+    "afterCost": "交易後成本",
+    "tradeRealized": "本筆已實現",
+    "action": "操作"
+  },
+  "prices": {
+    "notice": "Crypto 可從 Binance 自動更新；MSTR 目前採手動價。所有價格皆可覆寫。",
+    "manual": "手動 / Excel 備援值"
+  },
+  "backup": {
+    "tradeCount": "交易筆數",
+    "fx": "匯率 TWD/USD",
+    "strategyRealized": "策略已結算損益",
+    "dataLocation": "資料位置",
+    "browser": "此瀏覽器",
+    "backupTitle": "資料備份",
+    "export": "匯出 JSON",
+    "import": "匯入 JSON",
+    "reset": "恢復 Excel 初始資料",
+    "notice": "GitHub 只放程式碼與初始資料，不保存你後續新增的交易紀錄。換裝置或清除網站資料前先匯出 JSON。",
+    "settings": "其他設定"
   }
 }
