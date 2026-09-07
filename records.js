@@ -2,8 +2,8 @@ export const STORAGE_KEY='cryptoPortfolioV1';
 
 export async function loadSeed(){
   const [data,labels]=await Promise.all([
-    fetch('./portfolio-data.json').then(r=>r.json()),
-    fetch('./ui-labels.json').then(r=>r.json())
+    fetch('./portfolio-data.json?v=20260907-1130',{cache:'no-store'}).then(r=>r.json()),
+    fetch('./ui-labels.json?v=20260907-1130',{cache:'no-store'}).then(r=>r.json())
   ]);
   return {data,labels};
 }
@@ -17,7 +17,6 @@ export function loadState(seed){
   const state=existing;
   const version=+state.dataVersion||1;
   if(version<(seed.dataVersion||1)){
-    // History entered by the user always wins. Structural/reference data comes from seed.
     state.dataVersion=seed.dataVersion;
     state.assets=clone(seed.assets);
     state.exchanges=clone(seed.exchanges);
