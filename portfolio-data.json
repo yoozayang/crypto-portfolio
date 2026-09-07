@@ -1,14 +1,30 @@
 {
-  "dataVersion": 3,
+  "dataVersion": 4,
   "source": "虛擬幣投資記錄_MSTR爆擊倉_歷史交易可重算_完成版.xlsx",
   "fxTwdPerUsd": 31.582,
-  "assets": ["BTC","ETH","BNB","ADA","SOL","ONDO","ZRO","MSTR"],
+  "assets": ["BTC","ETH","BNB","ADA","SOL","ONDO","ZRO","MSTR","CASH","OTHER"],
   "exchanges": ["幣安","MAX","OKX","Bitfinex","其他"],
-  "prices": {"BTC":77362.625,"ETH":2503.065,"BNB":748.17,"ADA":0.22156,"SOL":105.34,"ONDO":0.38237,"ZRO":1.08825,"MSTR":142.8},
+  "prices": {"BTC":79785.9006846992,"ETH":2505.9996615515442,"BNB":748.6798543208766,"ADA":0.21999938370393984,"SOL":105.20910640724486,"ONDO":0.38237,"ZRO":1.08825,"MSTR":142.8},
   "priceMeta": {},
   "plans": {
-    "第一倉": {"BTC":25331,"ETH":6333,"BNB":0,"ADA":0,"SOL":0,"ONDO":0,"ZRO":0,"MSTR":0},
-    "第二倉": {"BTC":3933,"ETH":5500,"BNB":2400,"ADA":1900,"SOL":200,"ONDO":0,"ZRO":0,"MSTR":1900}
+    "第一倉": {"BTC":25331,"ETH":6333,"BNB":0,"ADA":0,"SOL":0,"ONDO":0,"ZRO":0,"MSTR":0,"CASH":0,"OTHER":0},
+    "第二倉": {"BTC":3933,"ETH":5500,"BNB":2400,"ADA":1900,"SOL":200,"ONDO":0,"ZRO":0,"MSTR":1900,"CASH":0,"OTHER":0}
+  },
+  "reconciliation": {
+    "enabled": true,
+    "asOf": "2026-09-07 11:27 +08:00",
+    "mode": "第一倉沿用交易成本；第二倉=交易所總資產-第一倉，歷史水庫成本未知",
+    "totalValue": 66171.46,
+    "exchangeTotals": {"幣安":50864.28,"MAX":10197.07,"OKX":5110.11},
+    "actualHoldings": {
+      "BTC": {"qty":0.25507827,"note":"Binance 0.19120659 + OKX 約0.06387168"},
+      "ETH": {"qty":15.30962493,"note":"Binance ETH 11.37136227 + WBETH 0.39135901 + MAX ETH 3.54690365；WBETH 併 ETH 曝險"},
+      "BNB": {"qty":1.56564918},
+      "ADA": {"qty":11870.43626063,"note":"Binance 6335.42683863 + MAX 5535.009422"},
+      "SOL": {"qty":2.33506403},
+      "CASH": {"value":3085.55,"note":"Binance USDC 3000.44 + USDT 32.96 + MAX 非鎖倉約52.15；其餘差額由 OTHER 對帳吸收"},
+      "OTHER": {"value":null,"note":"SHIB 與極小幣、交易所估值/未展開資產差額"}
+    }
   },
   "strategySettlements": [
     {"warehouse":"第一倉","exchange":"幣安","strategy":"BTC現貨網格","type":"策略結束","invested":8000,"recovered":8150,"realized":150,"handling":"併回主資金"},
