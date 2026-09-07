@@ -1,0 +1,15 @@
+{
+  "warehouses": [
+    {"id":"outside","label":"不屬於投資倉","managed":false},
+    {"id":"wh1","label":"第一倉","managed":true,"accountingKey":"第一倉"},
+    {"id":"wh2","label":"第二倉","managed":true,"accountingKey":"第二倉"}
+  ],
+  "locations": [
+    {"id":"external","label":"外部資金","type":"external"},
+    {"id":"ledger","label":"Ledger","type":"wallet"},
+    {"id":"metamask","label":"MetaMask","type":"wallet"},
+    {"id":"binance","label":"幣安","type":"exchange"},
+    {"id":"max","label":"MAX","type":"exchange"},
+    {"id":"okx","label":"OKX","type":"exchange"}
+  ]
+}
