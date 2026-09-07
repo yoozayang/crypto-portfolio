@@ -21,7 +21,7 @@ export function replayTransactions(state){
 }
 
 export function strategyRealized(state){return (state.strategySettlements||[]).reduce((s,x)=>s+(+x.realized||0),0);}
-export const marketValue=(p,prices)=>p.qty*(+prices[p.asset]||0);
+export const marketValue=(p,prices)=>p.marketValue??(p.qty*(+prices[p.asset]||0));
 
 export function trackedMetrics(state){
   const replay=replayTransactions(state);
@@ -43,30 +43,31 @@ export function reconciledPortfolio(state){
   if(!rec?.enabled) return {...metrics,reconciled:false,displayMarket:metrics.market,warehouses:{第一倉:firstTracked(metrics),第二倉:metrics.active.filter(p=>p.warehouse==='第二倉')}};
 
   const first=firstTracked(metrics);
-  const firstMarket=first.reduce((s,p)=>s+marketValue(p,state.prices),0);
-  const total=+rec.totalValue||metrics.market;
-  const secondMarket=Math.max(0,total-firstMarket);
-  const actual=rec.actualHoldings||{};
   const firstByAsset=Object.fromEntries(first.map(p=>[p.asset,p]));
+  const actual=rec.actualHoldings||{};
   const second=[];
+
   for(const asset of ['BTC','ETH','BNB','ADA','SOL']){
     const totalQty=+actual[asset]?.qty||0;
     const qty=Math.max(0,totalQty-(+firstByAsset[asset]?.qty||0));
     if(qty>1e-12) second.push({warehouse:'第二倉',asset,qty,cost:null,marketValue:qty*(+state.prices[asset]||+actual[asset]?.price||0),legacy:true});
   }
-  const knownSecondMarket=second.reduce((s,p)=>s+p.marketValue,0);
-  const residual=Math.max(0,secondMarket-knownSecondMarket);
-  const cash=Math.min(residual,+actual.CASH?.value||0);
-  if(cash>0) second.push({warehouse:'第二倉',asset:'CASH',qty:cash,cost:null,marketValue:cash,legacy:true});
-  const other=Math.max(0,residual-cash);
-  if(other>0) second.push({warehouse:'第二倉',asset:'OTHER',qty:other,cost:null,marketValue:other,legacy:true});
 
-  return {...metrics,reconciled:true,displayMarket:total,firstMarket,secondMarket,warehouses:{第一倉:first,第二倉:second},snapshot:rec};
+  const stableValue=+actual.STABLE?.value||0;
+  if(stableValue>0) second.push({warehouse:'第二倉',asset:'STABLE',qty:null,cost:null,marketValue:stableValue,legacy:false,label:'USDT/USDC'});
+
+  const otherValue=+actual.OTHER?.value||0;
+  if(otherValue>0) second.push({warehouse:'第二倉',asset:'OTHER',qty:null,cost:null,marketValue:otherValue,legacy:false,label:'其他小額資產'});
+
+  const firstMarket=first.reduce((s,p)=>s+marketValue(p,state.prices),0);
+  const secondMarket=second.reduce((s,p)=>s+marketValue(p,state.prices),0);
+  const displayMarket=firstMarket+secondMarket;
+
+  return {...metrics,reconciled:true,displayMarket,firstMarket,secondMarket,warehouses:{第一倉:first,第二倉:second},snapshot:rec};
 }
 
 export function planMetrics(state,warehouse,positions){
   const target=Object.values(state.plans?.[warehouse]||{}).reduce((s,v)=>s+(+v||0),0);
-  // Plans measure managed/known capital only. Legacy residuals never fake historical cost.
   const invested=positions.reduce((s,p)=>s+(Number.isFinite(+p.cost)?+p.cost:0),0);
   return {target,invested,pct:target?invested/target*100:0};
 }
