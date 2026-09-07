@@ -1,0 +1,47 @@
+{
+  "dataVersion": 3,
+  "source": "虛擬幣投資記錄_MSTR爆擊倉_歷史交易可重算_完成版.xlsx",
+  "fxTwdPerUsd": 31.582,
+  "assets": ["BTC","ETH","BNB","ADA","SOL","ONDO","ZRO","MSTR"],
+  "exchanges": ["幣安","MAX","OKX","Bitfinex","其他"],
+  "prices": {"BTC":77362.625,"ETH":2503.065,"BNB":748.17,"ADA":0.22156,"SOL":105.34,"ONDO":0.38237,"ZRO":1.08825,"MSTR":142.8},
+  "priceMeta": {},
+  "plans": {
+    "第一倉": {"BTC":25331,"ETH":6333,"BNB":0,"ADA":0,"SOL":0,"ONDO":0,"ZRO":0,"MSTR":0},
+    "第二倉": {"BTC":3933,"ETH":5500,"BNB":2400,"ADA":1900,"SOL":200,"ONDO":0,"ZRO":0,"MSTR":1900}
+  },
+  "strategySettlements": [
+    {"warehouse":"第一倉","exchange":"幣安","strategy":"BTC現貨網格","type":"策略結束","invested":8000,"recovered":8150,"realized":150,"handling":"併回主資金"},
+    {"warehouse":"第一倉","exchange":"幣安","strategy":"BTC現貨網格","type":"策略結束","invested":7000,"recovered":6997,"realized":-3,"handling":"併回操作倉資金"},
+    {"warehouse":"第二倉","exchange":"幣安","strategy":"BTC現貨網格","type":"策略結束/待確認","invested":4000,"recovered":3600,"realized":-400,"handling":"併回操作倉資金"},
+    {"warehouse":"第二倉","exchange":"幣安","strategy":"ETH現貨網格","type":"策略結束/待確認","invested":4000,"recovered":4250,"realized":250,"handling":"併回操作倉資金"},
+    {"warehouse":"第一倉","exchange":"幣安","strategy":"ETH現貨網格","type":"策略結束/待確認","invested":3000,"recovered":3350,"realized":350,"handling":"併回操作倉資金"}
+  ],
+  "transactions": [
+    {"id":1,"warehouse":"第二倉","exchange":"幣安","date":"2026-04-24","side":"買入","asset":"BNB","price":638.16,"qty":1.567,"amount":1000,"feeAsset":"","feeQty":0,"note":"第二倉BNB"},
+    {"id":2,"warehouse":"第二倉","exchange":"幣安","date":"2026-04-24","side":"買入","asset":"SOL","price":86.5,"qty":2.312,"amount":200,"feeAsset":"","feeQty":0,"note":"第二倉SOL"},
+    {"id":3,"warehouse":"第二倉","exchange":"幣安","date":"2026-04-24","side":"買入","asset":"ADA","price":0.2518,"qty":5805.5,"amount":1461,"feeAsset":"","feeQty":0,"note":"第二倉ADA"},
+    {"id":4,"warehouse":"第一倉","exchange":"幣安","date":"2026-04-26","side":"買入","asset":"ETH","price":2330,"qty":0.4288,"amount":1000,"feeAsset":"","feeQty":0,"note":"主倉ETH"},
+    {"id":5,"warehouse":"第二倉","exchange":"幣安","date":"2026-04-26","side":"買入","asset":"ADA","price":0.25253058,"qty":494.9,"amount":125,"feeAsset":"","feeQty":0,"note":"第二倉ADA補滿前段"},
+    {"id":6,"warehouse":"第二倉","exchange":"MAX","date":"2026-04-29","side":"買入","asset":"ADA","price":0.2479,"qty":1256,"amount":314,"feeAsset":"","feeQty":0,"note":"第二倉ADA補滿"},
+    {"id":7,"warehouse":"第二倉","exchange":"幣安","date":"2026-04-29","side":"買入","asset":"ETH","price":2327.82,"qty":0.4295,"amount":1000,"feeAsset":"","feeQty":0,"note":"第二倉ETH"},
+    {"id":8,"warehouse":"第一倉","exchange":"幣安","date":"2026-05-14","side":"買入","asset":"ETH","price":2268.71,"qty":0.4402593,"amount":999.820497,"feeAsset":"ETH","feeQty":0.0004407,"note":"主倉ETH（扣除手續費後實際入帳）"},
+    {"id":9,"warehouse":"第一倉","exchange":"幣安","date":"2026-05-15","side":"買入","asset":"ETH","price":2216.52,"qty":0.4545,"amount":1007.4,"feeAsset":"ETH","feeQty":0.0004407,"note":""},
+    {"id":10,"warehouse":"第一倉","exchange":"幣安","date":"2026-05-15","side":"買入","asset":"BTC","price":79115.73,"qty":0.02527,"amount":2000,"feeAsset":"","feeQty":0,"note":"BTC"},
+    {"id":11,"warehouse":"第一倉","exchange":"幣安","date":"2026-05-23","side":"買入","asset":"BTC","price":76000,"qty":0.01052,"amount":800,"feeAsset":"BTC","feeQty":0.00001052,"note":""},
+    {"id":12,"warehouse":"第一倉","exchange":"幣安","date":"2026-05-28","side":"買入","asset":"BTC","price":74000,"qty":0.01351,"amount":1000,"feeAsset":"BTC","feeQty":0.00001351,"note":""},
+    {"id":13,"warehouse":"第一倉","exchange":"幣安","date":"2026-06-03","side":"買入","asset":"BTC","price":67289.13,"qty":0.02975,"amount":2000,"feeAsset":"","feeQty":0,"note":""},
+    {"id":14,"warehouse":"第一倉","exchange":"幣安","date":"2026-06-05","side":"買入","asset":"BTC","price":61800,"qty":0.02427,"amount":1499.886,"feeAsset":"BTC","feeQty":0.00002427,"note":"第一倉BTC"},
+    {"id":15,"warehouse":"第一倉","exchange":"幣安","date":"2026-06-15","side":"賣出","asset":"BTC","price":66000,"qty":0.10456,"amount":6900.96,"feeAsset":"USDT","feeQty":6.90096,"costAdjustment":7528.32,"reset":true,"note":"全部賣出；成本依原紀錄校正"},
+    {"id":16,"warehouse":"第一倉","exchange":"幣安","date":"2026-08-19","side":"買入","asset":"BTC","price":64332,"qty":0.01554,"amount":1000,"feeAsset":"BTC","feeQty":0.00001476,"note":"第一倉BTC"},
+    {"id":17,"warehouse":"第二倉","exchange":"幣安","date":"2026-05-23","side":"買入","asset":"ETH","price":2050,"qty":0.7317,"amount":1500,"feeAsset":"ETH","feeQty":0,"note":""},
+    {"id":18,"warehouse":"第一倉","exchange":"幣安","date":"2026-05-11","side":"買入","asset":"ETH","price":2327,"qty":0.4296,"amount":999,"feeAsset":"ETH","feeQty":0,"note":"原第二倉ETH；已更正為第一倉"},
+    {"id":19,"warehouse":"第一倉","exchange":"幣安","date":"2026-08-24","side":"買入","asset":"ETH","price":2338.94,"qty":4.45207992,"amount":10413,"feeAsset":"","feeQty":0,"note":"ETH網格結算保留ETH，併入現貨持倉"},
+    {"id":20,"warehouse":"第二倉","exchange":"幣安","date":"2026-08-24","side":"買入","asset":"ETH","price":2338.94,"qty":5,"amount":10747,"feeAsset":"","feeQty":0,"note":"ETH網格結算保留ETH，併入現貨持倉"},
+    {"id":21,"warehouse":"第二倉","exchange":"OKX","date":"2026-08-22","side":"買入","asset":"BTC","price":78270.92,"qty":0.06393562,"amount":5004,"feeAsset":"BTC","feeQty":0.00006394,"note":""},
+    {"id":22,"warehouse":"第一倉","exchange":"幣安","date":"2026-08-22","side":"買入","asset":"BTC","price":76824,"qty":0.12880449,"amount":10000,"feeAsset":"","feeQty":0,"note":""},
+    {"id":23,"warehouse":"第一倉","exchange":"幣安","date":"2026-08-30","side":"賣出","asset":"ETH","price":2457,"qty":1,"amount":2457,"feeAsset":"","feeQty":0,"note":""},
+    {"id":24,"warehouse":"第一倉","exchange":"幣安","date":"2026-08-31","side":"買入","asset":"BTC","price":78103,"qty":0.0192,"amount":1500,"feeAsset":"","feeQty":0,"note":""},
+    {"id":25,"warehouse":"第一倉","exchange":"幣安","date":"2026-08-31","side":"買入","asset":"BTC","price":77823,"qty":0.03044,"amount":2369,"feeAsset":"","feeQty":0,"note":""}
+  ]
+}
