@@ -1,4 +1,4 @@
-import {STORAGE_KEY,nextEventSeq,saveState} from './records.js?v=20260907-1600';
+import {STORAGE_KEY,nextEventSeq,saveState} from './records.js?v=20260911-1718';
 import {replayTransactions} from './calculations.js?v=20260907-1525';
 const load=()=>JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
 const unlocked=()=>window.cryptoPortfolioEditLock?.isUnlocked?.()??true;
@@ -29,7 +29,11 @@ async function mount(){
   try{
     if(!config)config=await fetch('./flow-config.json?v=20260907-1620',{cache:'no-store'}).then(r=>r.json());
     if(!document.body.contains(host)||host.querySelector('#assetFlowForm'))return;
-    const state=load(),assets=[...(state.assets||[]).filter(a=>!['CASH','OTHER'].includes(a)),'STABLE'];
+    const state=load();
+    const runtimeLocations=(state.locationSettings||[]).filter(x=>x.enabled||x.id==='external').sort((a,b)=>(+a.sortOrder||100)-(+b.sortOrder||100)).map(x=>({id:x.id,label:x.label,type:x.type}));
+    if(runtimeLocations.length)config={...config,locations:runtimeLocations};
+    const runtimeAssets=(state.assetSettings||[]).filter(x=>x.enabled).sort((a,b)=>(+a.sortOrder||100)-(+b.sortOrder||100)).map(x=>x.code);
+    const assets=[...(runtimeAssets.length?runtimeAssets:(state.assets||[]).filter(a=>!['CASH','OTHER','STABLE'].includes(a))),'STABLE'];
     if(!document.querySelector('#assetFlowStyles')){const s=document.createElement('style');s.id='assetFlowStyles';s.textContent='.flow-block{padding:14px;border:1px solid var(--line);border-radius:12px;background:#0f1830}.flow-block h3{margin:0 0 12px;font-size:15px}.flow-divider{grid-column:1/-1;height:1px;background:var(--line);margin:6px 0}.flow-extra{padding-top:2px}[data-source-warehouse][hidden]{display:none!important}';document.head.appendChild(s);}
     const card=document.createElement('div');card.className='card section asset-flow-card';
     const lo=config.locations.map(x=>option(x.id,x.label)).join(''),ao=assets.map(x=>option(x,x==='STABLE'?'USDT/USDC':x)).join(''),wh=config.warehouses.map(x=>option(x.id,x.label)).join('');
