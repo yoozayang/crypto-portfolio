@@ -1,10 +1,9 @@
-const STORAGE_KEY='cryptoPortfolioV1';
+import {STORAGE_KEY,saveState} from './records.js?v=20260911-1635';
 const fmt=n=>Number.isFinite(+n)?(+n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
 const signed=n=>`${+n>=0?'+':''}${fmt(n)} U`;
 const esc=s=>String(s??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
 const unlocked=()=>sessionStorage.getItem('cryptoPortfolioEditUnlocked')==='1';
 const loadState=()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch{return null}};
-const saveState=state=>localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
 
 function formHtml(row={}){
   const disabled=unlocked()?'':'disabled';
@@ -22,37 +21,6 @@ function formHtml(row={}){
     <div class="full toolbar"><button class="btn" id="strategyCancel" type="button">清空</button><button class="btn primary" type="submit" ${disabled}>${row.id?'儲存修改':'新增策略結算'}</button></div>
   </form>`;
 }
-
-function render(){
-  const host=document.querySelector('#transactions');
-  if(!host||document.querySelector('#strategySettlementSection'))return;
-  const state=loadState(); if(!state)return;
-  const rows=state.strategySettlements||[];
-  const total=rows.reduce((s,x)=>s+(+x.realized||0),0);
-  const section=document.createElement('div');
-  section.id='strategySettlementSection';
-  section.className='section';
-  section.innerHTML=`<div class="card"><div class="holding-card-top"><h2>策略結算紀錄</h2><strong class="${total>=0?'good':'bad'}">合計 ${signed(total)}</strong></div><div id="strategySettlementFormWrap">${formHtml()}</div></div>
-  <div class="table-wrap section"><table><thead><tr><th>#</th><th>倉位</th><th>交易所</th><th>策略</th><th>類型</th><th>投入U</th><th>收回U</th><th>已實現</th><th>處理方式</th><th>操作</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.id}</td><td>${esc(r.warehouse)}</td><td>${esc(r.exchange)}</td><td>${esc(r.strategy)}</td><td>${esc(r.type)}</td><td>${fmt(r.invested)}</td><td>${fmt(r.recovered)}</td><td class="${+r.realized>=0?'good':'bad'}">${signed(r.realized)}</td><td>${esc(r.handling||'')}</td><td><button data-strategy-edit="${r.id}" ${unlocked()?'':'disabled'}>編輯</button> <button data-strategy-del="${r.id}" ${unlocked()?'':'disabled'}>刪除</button></td></tr>`).join('')}</tbody><tfoot><tr><th colspan="7" style="text-align:right">策略已實現合計</th><th class="${total>=0?'good':'bad'}">${signed(total)}</th><th colspan="2"></th></tr></tfoot></table></div>`;
-  host.appendChild(section);
-  bind();
-}
-
-function bind(){
-  const state=loadState(); if(!state)return;
-  const wrap=document.querySelector('#strategySettlementFormWrap');
-  const bindForm=()=>{
-    const f=document.querySelector('#strategySettlementForm'); if(!f)return;
-    const invested=f.elements.invested,recovered=f.elements.recovered,realized=f.elements.realized;
-    const auto=()=>{if(realized.dataset.manual!=='1'&&invested.value!==''&&recovered.value!=='')realized.value=(+recovered.value-(+invested.value)).toFixed(2)};
-    realized.addEventListener('input',()=>realized.dataset.manual='1'); invested.addEventListener('input',auto); recovered.addEventListener('input',auto);
-    f.onsubmit=e=>{e.preventDefault();if(!unlocked())return;const d=Object.fromEntries(new FormData(f));const rows=state.strategySettlements||[];const id=d.id?+d.id:Math.max(0,...rows.map(x=>+x.id||0))+1;const investedN=+d.invested||0,recoveredN=+d.recovered||0,realizedN=d.realized===''?recoveredN-investedN:+d.realized;const obj={id,warehouse:d.warehouse,exchange:d.exchange,strategy:d.strategy||'策略結算',type:d.type||'策略結束',invested:investedN,recovered:recoveredN,realized:realizedN,handling:d.handling||''};const i=rows.findIndex(x=>+x.id===id);i>=0?rows[i]=obj:rows.push(obj);state.strategySettlements=rows;saveState(state);location.reload()};
-    document.querySelector('#strategyCancel').onclick=()=>{wrap.innerHTML=formHtml();bindForm()};
-  };
-  bindForm();
-  document.querySelectorAll('[data-strategy-edit]').forEach(b=>b.onclick=()=>{const row=(state.strategySettlements||[]).find(x=>+x.id===+b.dataset.strategyEdit);if(!row)return;wrap.innerHTML=formHtml(row);bindForm();wrap.scrollIntoView({behavior:'smooth',block:'center'})});
-  document.querySelectorAll('[data-strategy-del]').forEach(b=>b.onclick=()=>{if(!unlocked())return;if(confirm('刪除這筆策略結算？')){state.strategySettlements=(state.strategySettlements||[]).filter(x=>+x.id!==+b.dataset.strategyDel);saveState(state);location.reload()}});
-}
-
-const timer=setInterval(()=>{render();if(document.querySelector('#strategySettlementSection'))clearInterval(timer)},150);
-setTimeout(()=>clearInterval(timer),10000);
+function render(){const host=document.querySelector('#transactions');if(!host||document.querySelector('#strategySettlementSection'))return;const state=loadState();if(!state)return;const rows=state.strategySettlements||[],total=rows.reduce((s,x)=>s+(+x.realized||0),0),section=document.createElement('div');section.id='strategySettlementSection';section.className='section';section.innerHTML=`<div class="card"><div class="holding-card-top"><h2>策略結算紀錄</h2><strong class="${total>=0?'good':'bad'}">合計 ${signed(total)}</strong></div><div id="strategySettlementFormWrap">${formHtml()}</div></div><div class="table-wrap section"><table><thead><tr><th>#</th><th>倉位</th><th>交易所</th><th>策略</th><th>類型</th><th>投入U</th><th>收回U</th><th>已實現</th><th>處理方式</th><th>操作</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.id}</td><td>${esc(r.warehouse)}</td><td>${esc(r.exchange)}</td><td>${esc(r.strategy)}</td><td>${esc(r.type)}</td><td>${fmt(r.invested)}</td><td>${fmt(r.recovered)}</td><td class="${+r.realized>=0?'good':'bad'}">${signed(r.realized)}</td><td>${esc(r.handling||'')}</td><td><button data-strategy-edit="${r.id}" ${unlocked()?'':'disabled'}>編輯</button> <button data-strategy-del="${r.id}" ${unlocked()?'':'disabled'}>刪除</button></td></tr>`).join('')}</tbody><tfoot><tr><th colspan="7" style="text-align:right">策略已實現合計</th><th class="${total>=0?'good':'bad'}">${signed(total)}</th><th colspan="2"></th></tr></tfoot></table></div>`;host.appendChild(section);bind();}
+function bind(){const state=loadState();if(!state)return;const wrap=document.querySelector('#strategySettlementFormWrap');const bindForm=()=>{const f=document.querySelector('#strategySettlementForm');if(!f)return;const invested=f.elements.invested,recovered=f.elements.recovered,realized=f.elements.realized;const auto=()=>{if(realized.dataset.manual!=='1'&&invested.value!==''&&recovered.value!=='')realized.value=(+recovered.value-(+invested.value)).toFixed(2)};realized.addEventListener('input',()=>realized.dataset.manual='1');invested.addEventListener('input',auto);recovered.addEventListener('input',auto);f.onsubmit=e=>{e.preventDefault();if(!unlocked())return;const d=Object.fromEntries(new FormData(f)),rows=state.strategySettlements||[],id=d.id?+d.id:Math.max(0,...rows.map(x=>+x.id||0))+1,investedN=+d.invested||0,recoveredN=+d.recovered||0,realizedN=d.realized===''?recoveredN-investedN:+d.realized,obj={id,warehouse:d.warehouse,exchange:d.exchange,strategy:d.strategy||'策略結算',type:d.type||'策略結束',invested:investedN,recovered:recoveredN,realized:realizedN,handling:d.handling||''},i=rows.findIndex(x=>+x.id===id);i>=0?rows[i]=obj:rows.push(obj);state.strategySettlements=rows;saveState(state);location.reload()};document.querySelector('#strategyCancel').onclick=()=>{wrap.innerHTML=formHtml();bindForm()};};bindForm();document.querySelectorAll('[data-strategy-edit]').forEach(b=>b.onclick=()=>{const row=(state.strategySettlements||[]).find(x=>+x.id===+b.dataset.strategyEdit);if(!row)return;wrap.innerHTML=formHtml(row);bindForm();wrap.scrollIntoView({behavior:'smooth',block:'center'})});document.querySelectorAll('[data-strategy-del]').forEach(b=>b.onclick=()=>{if(!unlocked())return;if(confirm('刪除這筆策略結算？')){state.strategySettlements=(state.strategySettlements||[]).filter(x=>+x.id!==+b.dataset.strategyDel);saveState(state);location.reload()}});}
+const timer=setInterval(()=>{render();if(document.querySelector('#strategySettlementSection'))clearInterval(timer)},150);setTimeout(()=>clearInterval(timer),10000);
