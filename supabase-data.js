@@ -14,6 +14,30 @@ export async function loadRemoteCollections(){
   ledgerEntries.sort((a,b)=>(+a.seq||+a.id||0)-(+b.seq||+b.id||0));
   return {transactions,strategySettlements,ledgerEntries};
 }
+export async function loadRemoteSettings(){
+  const [assets,locations]=await Promise.all([
+    get('asset_settings?select=*&order=sort_order.asc,code.asc'),
+    get('location_settings?select=*&order=sort_order.asc,label.asc')
+  ]);
+  return {
+    assets:(assets||[]).map(r=>({code:r.code,displayName:r.display_name||r.code,enabled:!!r.enabled,priceEnabled:!!r.price_enabled,priceSource:r.price_source||'binance_spot',priceSymbol:r.price_symbol||'',sortOrder:+r.sort_order||100,note:r.note||''})),
+    locations:(locations||[]).map(r=>({id:r.id,label:r.label,type:r.type,enabled:!!r.enabled,sortOrder:+r.sort_order||100,note:r.note||''}))
+  };
+}
+export async function saveAssetSetting(item){
+  const code=String(item.code||'').trim().toUpperCase();
+  if(!code)throw new Error('資產代號不可空白');
+  const row={code,display_name:item.displayName||code,enabled:item.enabled!==false,price_enabled:item.priceEnabled!==false,price_source:item.priceSource||'binance_spot',price_symbol:String(item.priceSymbol||`${code}USDT`).trim().toUpperCase(),sort_order:+item.sortOrder||100,note:item.note||'',updated_at:new Date().toISOString()};
+  await request('asset_settings?on_conflict=code',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)});
+  return row;
+}
+export async function saveLocationSetting(item){
+  const id=String(item.id||'').trim();
+  if(!id)throw new Error('位置 ID 不可空白');
+  const row={id,label:String(item.label||id).trim(),type:item.type||'other',enabled:item.enabled!==false,sort_order:+item.sortOrder||100,note:item.note||'',updated_at:new Date().toISOString()};
+  await request('location_settings?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)});
+  return row;
+}
 async function syncEvents(rows){
   if(rows.length)await request('portfolio_events?on_conflict=event_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)});
   const existing=await get('portfolio_events?select=event_key');
