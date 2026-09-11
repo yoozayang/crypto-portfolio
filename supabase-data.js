@@ -11,5 +11,18 @@ export async function loadRemoteCollections(){const [transactions,strategySettle
 const txRow=t=>({id:+t.id,seq:n(t.seq),warehouse:t.warehouse,exchange:t.exchange||'幣安',trade_date:t.date,side:t.side,asset:t.asset,instrument:t.instrument||null,price:+t.price||0,qty:+t.qty||0,amount_u:+t.amount||0,fee_asset:t.feeAsset||'',fee_qty:+t.feeQty||0,cost_adjustment:t.costAdjustment==null?null:+t.costAdjustment,reset:!!t.reset,note:t.note||'',group_id:t.groupId||null,source:t.source||null});
 const strategyRow=s=>({id:+s.id,warehouse:s.warehouse,exchange:s.exchange||'',strategy:s.strategy||'',settlement_type:s.type||'',invested:+s.invested||0,recovered:+s.recovered||0,realized:+s.realized||0,handling:s.handling||''});
 const ledgerRow=e=>{const {id,seq,type,flowType,date,...payload}=e;return {id:+id,seq:n(seq),entry_type:type||'流轉',flow_type:flowType||null,entry_date:date||null,payload}};
-async function replaceTable(table,rows){await request(`${table}?id=gt.0`,{method:'DELETE'});if(rows.length)await request(table,{method:'POST',body:JSON.stringify(rows)})}
-export async function syncRemoteCollections(state){await replaceTable('transactions',(state.transactions||[]).map(txRow));await replaceTable('strategy_settlements',(state.strategySettlements||[]).map(strategyRow));await replaceTable('ledger_entries',(state.ledgerEntries||[]).map(ledgerRow));}
+async function safeSyncTable(table,rows){
+  const normalized=rows.filter(r=>Number.isFinite(+r.id)&&+r.id>0);
+  if(normalized.length){
+    await request(`${table}?on_conflict=id`,{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(normalized)});
+  }
+  const existing=await get(`${table}?select=id`);
+  const keep=new Set(normalized.map(r=>+r.id));
+  const stale=(existing||[]).map(r=>+r.id).filter(id=>!keep.has(id));
+  for(const id of stale)await request(`${table}?id=eq.${id}`,{method:'DELETE'});
+}
+export async function syncRemoteCollections(state){
+  await safeSyncTable('transactions',(state.transactions||[]).map(txRow));
+  await safeSyncTable('strategy_settlements',(state.strategySettlements||[]).map(strategyRow));
+  await safeSyncTable('ledger_entries',(state.ledgerEntries||[]).map(ledgerRow));
+}
