@@ -1,4 +1,4 @@
-import {loadSeed,loadState,saveState} from './records.js?v=20260911-1635';
+import {loadSeed,loadState,saveState} from './records.js?v=20260911-1645';
 import {mountApp} from './display.js?v=20260911-1425';
 
 (async()=>{
