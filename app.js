@@ -1,9 +1,7 @@
-import './cloud-overlay.js?v=20260911-3';
-import {loadSeed,loadState,saveState} from './records.js?v=20260907-1545';
+import {loadSeed,loadState,saveState} from './records.js?v=20260911-1635';
 import {mountApp} from './display.js?v=20260911-1425';
 
 (async()=>{
-  await window.cryptoPortfolioCloudReady;
   const {data:seed,labels}=await loadSeed();
   let state=loadState(seed);
   saveState(state);
