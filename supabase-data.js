@@ -38,8 +38,16 @@ export async function saveLocationSetting(item){
   await request('location_settings?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)});
   return row;
 }
+async function upsertEventRows(rows){
+  if(!rows.length)return;
+  await request('portfolio_events?on_conflict=event_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)});
+}
+export async function saveRemoteEvents(events){
+  const rows=(events||[]).map(({kind,item})=>eventRow(kind,item));
+  await upsertEventRows(rows);
+}
 async function syncEvents(rows){
-  if(rows.length)await request('portfolio_events?on_conflict=event_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)});
+  await upsertEventRows(rows);
   const existing=await get('portfolio_events?select=event_key');
   const keep=new Set(rows.map(r=>r.event_key));
   for(const r of existing||[])if(!keep.has(r.event_key))await request(`portfolio_events?event_key=eq.${encodeURIComponent(r.event_key)}`,{method:'DELETE'});
