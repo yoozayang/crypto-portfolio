@@ -1,5 +1,5 @@
 import {loadSeed,loadState,saveState} from './records.js?v=20260911-1718';
-import {mountApp} from './display.js?v=20260911-1718';
+import {mountApp} from './display.js?v=20260930-2225';
 
 (async()=>{
   const {data:seed,labels}=await loadSeed();
