@@ -1,4 +1,4 @@
-import {loadRemoteCollections,loadRemoteSettings,syncRemoteCollections} from './supabase-data.js?v=20260911-1718';
+import {loadRemoteCollections,loadRemoteSettings,syncRemoteCollections} from './supabase-data.js?v=20261030-1930';
 export const STORAGE_KEY='cryptoPortfolioV1';
 const clone=o=>JSON.parse(JSON.stringify(o));
 const maxSeq=state=>Math.max(0,...(state.transactions||[]).map(x=>+x.seq||+x.id||0),...(state.ledgerEntries||[]).map(x=>+x.seq||0));
