@@ -1,4 +1,4 @@
-import {STORAGE_KEY,nextEventSeq,saveState,flushRemoteSync} from './records.js?v=20260911-1718';
+import {STORAGE_KEY,nextEventSeq,saveState,flushRemoteSync} from './records.js?v=20261030-1930';
 import {replayTransactions} from './calculations.js?v=20260907-1525';
 const load=()=>JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
 const unlocked=()=>window.cryptoPortfolioEditLock?.isUnlocked?.()??true;
