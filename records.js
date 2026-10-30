@@ -7,7 +7,7 @@ const sharedSlice=state=>({transactions:state.transactions||[],strategySettlemen
 const fingerprint=state=>JSON.stringify(sharedSlice(state));
 let remoteFingerprint='';
 let syncTimer=null;
-function queueRemoteSync(state){if(sessionStorage.getItem('cryptoPortfolioEditUnlocked')!=='1')return;const fp=fingerprint(state);if(fp===remoteFingerprint)return;clearTimeout(syncTimer);const snapshot=clone(sharedSlice(state));syncTimer=setTimeout(async()=>{try{await syncRemoteCollections(snapshot);remoteFingerprint=JSON.stringify(snapshot);console.info('Portfolio events synced to Supabase.')}catch(err){console.error('Supabase sync failed.',err);alert('雲端同步失敗，本機快取仍保留；請重新整理後再試。')}},250);}
+function queueRemoteSync(state){if(sessionStorage.getItem('cryptoPortfolioEditUnlocked')!=='1')return;const fp=fingerprint(state);if(fp===remoteFingerprint)return;clearTimeout(syncTimer);const snapshot=clone(sharedSlice(state));syncTimer=setTimeout(async()=>{try{await syncRemoteCollections(snapshot,JSON.parse(remoteFingerprint));remoteFingerprint=JSON.stringify(snapshot);console.info('Portfolio events synced to Supabase.')}catch(err){console.error('Supabase sync failed.',err);alert('雲端同步失敗，本機快取仍保留；請重新整理後再試。')}},250);}
 const fallbackAssets=data=>(data.assets||[]).filter(code=>!['CASH','OTHER','STABLE'].includes(code)).map((code,i)=>({code,displayName:code,enabled:true,priceEnabled:true,priceSource:'binance_spot',priceSymbol:code==='MSTR'?'MSTRBUSDT':`${code}USDT`,sortOrder:(i+1)*10,note:''}));
 const fallbackLocations=flow=>(flow.locations||[]).map((x,i)=>({...x,enabled:true,sortOrder:(i+1)*10,note:''}));
 export async function loadSeed(){
