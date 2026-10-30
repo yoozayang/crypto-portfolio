@@ -46,13 +46,24 @@ export async function saveRemoteEvents(events){
   const rows=(events||[]).map(({kind,item})=>eventRow(kind,item));
   await upsertEventRows(rows);
 }
-async function syncEvents(rows){
-  await upsertEventRows(rows);
-  const existing=await get('portfolio_events?select=event_key');
-  const keep=new Set(rows.map(r=>r.event_key));
-  for(const r of existing||[])if(!keep.has(r.event_key))await request(`portfolio_events?event_key=eq.${encodeURIComponent(r.event_key)}`,{method:'DELETE'});
+// Compare the remote snapshot before writing. A stale tab must never overwrite or delete newer events.
+async function syncEvents(rows,baselineRows){
+  const existing=await get('portfolio_events?select=event_key,payload');
+  const remote=new Map((existing||[]).map(r=>[r.event_key,r.payload]));
+  const baseline=new Map((baselineRows||[]).map(r=>[r.event_key,r.payload]));
+  const desired=new Map(rows.map(r=>[r.event_key,r]));
+  const same=(a,b)=>JSON.stringify(sortObject(a))===JSON.stringify(sortObject(b));
+  const changed=[...rows].filter(r=>!baseline.has(r.event_key)||!same(r.payload,baseline.get(r.event_key)));
+  const removed=[...baseline.keys()].filter(k=>!desired.has(k));
+  for(const k of [...new Set([...changed.map(r=>r.event_key),...removed])]){
+    if(!same(remote.get(k),baseline.get(k)))throw new Error('雲端資料已被其他分頁更新，請重新整理後再操作：'+k);
+  }
+  await upsertEventRows(changed);
+  for(const k of removed)await request(`portfolio_events?event_key=eq.${encodeURIComponent(k)}`,{method:'DELETE'});
 }
-export async function syncRemoteCollections(state){
+function sortObject(v){if(Array.isArray(v))return v.map(sortObject);if(v&&typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,sortObject(v[k])]));return v;}
+export async function syncRemoteCollections(state,baselineState){
   const rows=[...(state.transactions||[]).map(x=>eventRow('transaction',x)),...(state.strategySettlements||[]).map(x=>eventRow('strategy',x)),...(state.ledgerEntries||[]).map(x=>eventRow('ledger',x))];
-  await syncEvents(rows);
+  const baselineRows=[...(baselineState?.transactions||[]).map(x=>eventRow('transaction',x)),...(baselineState?.strategySettlements||[]).map(x=>eventRow('strategy',x)),...(baselineState?.ledgerEntries||[]).map(x=>eventRow('ledger',x))];
+  await syncEvents(rows,baselineRows);
 }
