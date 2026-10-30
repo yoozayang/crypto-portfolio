@@ -1,5 +1,5 @@
-import {STORAGE_KEY,nextEventSeq,saveState} from './records.js?v=20260907-1535';
-import {ledgerMetrics,currentActualHoldings} from './calculations.js?v=20260907-1535';
+import {STORAGE_KEY,nextEventSeq,saveState,commitChange,reloadAfterSave,stateReady} from './records.js';
+import {ledgerMetrics,currentActualHoldings} from './calculations.js';
 
 const load=()=>JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10,15 +10,20 @@ const assetList=state=>[...new Set([...(state.assets||[]).filter(a=>!['CASH','OT
 const assetName=a=>a==='STABLE'?'USDT/USDC':a;
 const isUnlocked=()=>window.cryptoPortfolioEditLock?.isUnlocked?.()??true;
 const askUnlock=()=>window.cryptoPortfolioEditLock?.open?.();
-const persist=(state,stay='ledger')=>{saveState(state);sessionStorage.setItem('cryptoPortfolioReturnTab',stay);location.reload();};
+// Financial entries: resolves only after Supabase confirmed the change; the page reloads only after that.
+const persist=async(before,state,label)=>{await commitChange(before,state,{label});reloadAfterSave('ledger',`${label}已儲存到雲端`);};
+// Snapshots are local-only reconciliation data (not stored in Supabase).
+const persistLocal=state=>{saveState(state);sessionStorage.setItem('cryptoPortfolioReturnTab','ledger');location.reload();};
+const guarded=async(btn,fn)=>{if(!btn||btn.disabled)return;const text=btn.textContent;btn.disabled=true;btn.textContent='儲存到雲端中…';try{if(await fn()===false){btn.disabled=false;btn.textContent=text;}}catch(err){btn.disabled=false;btn.textContent=text;alert(`儲存失敗：${err.message||String(err)}`);}};
 
 function ensureTab(){
   const tabs=document.querySelector('#tabs');if(!tabs||document.querySelector('[data-tab="ledger"]'))return;
   const btn=document.createElement('button');btn.dataset.tab='ledger';btn.textContent='出入金/轉帳登記';
   const backup=tabs.querySelector('[data-tab="backup"]');tabs.insertBefore(btn,backup||null);
   const section=document.createElement('section');section.id='ledger';section.className='tab-pane hidden';document.querySelector('#app').appendChild(section);
-  btn.onclick=()=>{document.querySelectorAll('.tab-pane').forEach(x=>x.classList.toggle('hidden',x.id!=='ledger'));document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('active',x===btn));renderLedger();};
-  if(sessionStorage.getItem('cryptoPortfolioReturnTab')==='ledger'){sessionStorage.removeItem('cryptoPortfolioReturnTab');setTimeout(()=>btn.click(),0);}
+  // addEventListener, not onclick: display.js reassigns every tab's onclick after loading, which used to drop this render.
+  btn.addEventListener('click',()=>{document.querySelectorAll('.tab-pane').forEach(x=>x.classList.toggle('hidden',x.id!=='ledger'));document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('active',x===btn));stateReady.then(()=>renderLedger());});
+  if(sessionStorage.getItem('cryptoPortfolioReturnTab')==='ledger'){sessionStorage.removeItem('cryptoPortfolioReturnTab');stateReady.then(()=>btn.click());}
 }
 
 function select(name,label,items,value=''){return `<label><span>${label}</span><select name="${name}">${items.map(x=>{const v=typeof x==='string'?x:x.value,l=typeof x==='string'?x:x.label;return `<option value="${esc(v)}" ${v===value?'selected':''}>${esc(l)}</option>`}).join('')}</select></label>`;}
@@ -43,9 +48,9 @@ function entrySummary(e){
   return '';
 }
 
-function saveEntry(form){
-  if(!isUnlocked()){askUnlock();return;}
-  const state=load(),d=Object.fromEntries(new FormData(form)),type=d.type,editId=+d.editId||0,old=editId?(state.ledgerEntries||[]).find(x=>x.id===editId):null;
+async function saveEntry(form){
+  if(!isUnlocked()){askUnlock();return false;}
+  const state=load(),before=JSON.parse(JSON.stringify(state)),d=Object.fromEntries(new FormData(form)),type=d.type,editId=+d.editId||0,old=editId?(state.ledgerEntries||[]).find(x=>x.id===editId):null;
   const base={id:editId||nextId(state.ledgerEntries),seq:old?.seq||nextEventSeq(state),type,date:d.date,warehouse:d.warehouse,note:d.note||''};
   let entry={...base};
   if(['deposit','withdraw'].includes(type))entry={...entry,exchange:d.exchange,asset:d.asset,amountU:+d.amountU||0,qty:+d.qty||0};
@@ -59,13 +64,13 @@ function saveEntry(form){
     state.transactions.push({id:buyId,seq:buySeq,warehouse:d.warehouse,exchange:d.toExchange,date:d.date,side:'買入',asset:d.toAsset,price:(+d.toQty?(+d.buyAmountU||+d.sellAmountU)/+d.toQty:0),qty:+d.toQty||0,amount:+d.buyAmountU||+d.sellAmountU||0,feeAsset:'',feeQty:0,reset:false,note:`換倉 ${groupId}: ${d.fromAsset} → ${d.toAsset}`,groupId,source:'swap'});
     entry.linkedTransactionIds=[sellId,buyId];
   }
-  state.ledgerEntries=state.ledgerEntries||[];const i=state.ledgerEntries.findIndex(x=>x.id===entry.id);i>=0?state.ledgerEntries[i]=entry:state.ledgerEntries.push(entry);persist(state);
+  state.ledgerEntries=state.ledgerEntries||[];const i=state.ledgerEntries.findIndex(x=>x.id===entry.id);i>=0?state.ledgerEntries[i]=entry:state.ledgerEntries.push(entry);await persist(before,state,`${typeLabel(type)}紀錄`);
 }
 
-function deleteEntry(id){if(!isUnlocked()){askUnlock();return;}if(!confirm('刪除這筆出入金／轉帳紀錄？'))return;const state=load(),e=(state.ledgerEntries||[]).find(x=>x.id===id);if(e?.linkedTransactionIds?.length)state.transactions=state.transactions.filter(t=>!e.linkedTransactionIds.includes(t.id));state.ledgerEntries=(state.ledgerEntries||[]).filter(x=>x.id!==id);persist(state);}
+async function deleteEntry(id){if(!isUnlocked()){askUnlock();return false;}if(!confirm('刪除這筆出入金／轉帳紀錄？'))return false;const state=load(),before=JSON.parse(JSON.stringify(state)),e=(state.ledgerEntries||[]).find(x=>x.id===id);if(e?.linkedTransactionIds?.length)state.transactions=state.transactions.filter(t=>!e.linkedTransactionIds.includes(t.id));state.ledgerEntries=(state.ledgerEntries||[]).filter(x=>x.id!==id);await persist(before,state,`刪除${typeLabel(e?.type)}紀錄`);}
 
 function snapshotForm(state){const actual=currentActualHoldings(state).holdings,assets=[...new Set([...(state.assets||[]).filter(a=>!['CASH','OTHER'].includes(a))])];return `<div class="ledger-snapshot-grid">${assets.map(a=>input(`snap_${a}`,`${a} 實際數量`,actual[a]?.qty||'')).join('')}${input('snap_STABLE','USDT/USDC 總額',actual.STABLE?.value||'')}${input('snap_OTHER','其他小額資產（U）',actual.OTHER?.value||'')}</div>`;}
-function saveSnapshot(form){if(!isUnlocked()){askUnlock();return;}const state=load(),d=Object.fromEntries(new FormData(form)),holdings={};for(const a of (state.assets||[]).filter(a=>!['CASH','OTHER'].includes(a)))holdings[a]={qty:+d[`snap_${a}`]||0};holdings.STABLE={value:+d.snap_STABLE||0,label:'USDT/USDC'};holdings.OTHER={value:+d.snap_OTHER||0,label:'其他小額資產'};const throughSeq=Math.max(0,...(state.transactions||[]).map(x=>+x.seq||+x.id||0),...(state.ledgerEntries||[]).map(x=>+x.seq||0));state.snapshots=state.snapshots||[];state.snapshots.push({id:nextId(state.snapshots),date:d.snapshotDate||today(),asOf:new Date().toISOString(),label:d.snapshotLabel||`${d.snapshotDate||today()} 對帳`,holdings,throughTransactionId:Math.max(0,...(state.transactions||[]).map(x=>+x.id||0)),throughLedgerId:Math.max(0,...(state.ledgerEntries||[]).map(x=>+x.id||0)),throughSeq,note:d.snapshotNote||''});persist(state);}
+function saveSnapshot(form){if(!isUnlocked()){askUnlock();return;}const state=load(),d=Object.fromEntries(new FormData(form)),holdings={};for(const a of (state.assets||[]).filter(a=>!['CASH','OTHER'].includes(a)))holdings[a]={qty:+d[`snap_${a}`]||0};holdings.STABLE={value:+d.snap_STABLE||0,label:'USDT/USDC'};holdings.OTHER={value:+d.snap_OTHER||0,label:'其他小額資產'};const throughSeq=Math.max(0,...(state.transactions||[]).map(x=>+x.seq||+x.id||0),...(state.ledgerEntries||[]).map(x=>+x.seq||0));state.snapshots=state.snapshots||[];state.snapshots.push({id:nextId(state.snapshots),date:d.snapshotDate||today(),asOf:new Date().toISOString(),label:d.snapshotLabel||`${d.snapshotDate||today()} 對帳`,holdings,throughTransactionId:Math.max(0,...(state.transactions||[]).map(x=>+x.id||0)),throughLedgerId:Math.max(0,...(state.ledgerEntries||[]).map(x=>+x.id||0)),throughSeq,note:d.snapshotNote||''});persistLocal(state);}
 
 function renderCapitalStrip(){const host=document.querySelector('#dashboard');if(!host||host.classList.contains('hidden'))return;const old=host.querySelector('.capital-strip');old?.remove();const state=load(),m=ledgerMetrics(state),box=document.createElement('div');box.className='grid section capital-strip';box.innerHTML=`<div class="card kpi"><div class="label">第一倉投入本金</div><div class="value">${fmt(m.firstCapital)} U</div><div class="subtle">期初 31,664 U；後續出入金另計</div></div><div class="card kpi"><div class="label">第二倉期初資產基準</div><div class="value">${fmt(m.secondOpeningAssetBaseline)} U</div><div class="subtle">2026/09/07 依當日資產市值建立，不視為歷史成本</div></div><div class="card kpi"><div class="label">期初後淨入金</div><div class="value">${fmt(m.postBaselineNetFlow)} U</div><div class="subtle">只計之後真正的入金－出金</div></div><div class="card kpi"><div class="label">累積非交易收益</div><div class="value good">${fmt(m.income)} U</div><div class="subtle">Earn / Staking / 空投 / Cashback</div></div>`;host.prepend(box);}
 
@@ -76,7 +81,7 @@ function renderLedger(editId=0){
   <div class="card section"><h2>建立對帳 Snapshot</h2><div class="notice">輸入各資產在所有交易所的實際總餘額。建立後，系統以此為新基準，只套用之後的新交易與資金紀錄，不必回頭補齊所有歷史。</div><form id="snapshotForm" class="ledger-snapshot-form">${input('snapshotDate','對帳日期',today(),'date','')}${input('snapshotLabel','名稱',`${today()} 對帳`,'text','')}${snapshotForm(state)}<label class="full"><span>備註</span><textarea name="snapshotNote"></textarea></label><div class="toolbar"><button class="btn primary" type="submit">儲存 Snapshot</button></div></form></div>
   <div class="card section"><h2>出入金 / 轉帳紀錄</h2>${entries.length?`<div class="table-wrap"><table><thead><tr><th>日期</th><th>倉位</th><th>類型</th><th>內容</th><th>備註</th><th>操作</th></tr></thead><tbody>${entries.map(e=>`<tr><td>${e.date||''}</td><td>${e.warehouse||'—'}</td><td>${typeLabel(e.type)}</td><td>${esc(entrySummary(e))}</td><td>${esc(e.note||'')}</td><td><button data-ledger-edit="${e.id}">編輯</button> <button data-ledger-del="${e.id}">刪除</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="notice">尚無新增紀錄。既有歷史交易與 2026/09/07 初始 Snapshot 已保留。</div>'}</div>
   <div class="card section"><h2>Snapshot 歷史</h2><div class="table-wrap"><table><thead><tr><th>日期</th><th>名稱</th><th>涵蓋事件序號</th><th>備註</th></tr></thead><tbody>${[...(state.snapshots||[])].reverse().map(s=>`<tr><td>${s.date||''}</td><td>${esc(s.label||'')}</td><td>${s.throughSeq||0}</td><td>${esc(s.note||'')}</td></tr>`).join('')}</tbody></table></div></div>`;
-  const form=host.querySelector('#ledgerForm');form.querySelector('[name="type"]').onchange=e=>{form.querySelector('.ledger-fields').innerHTML=fieldsFor(e.target.value,state,{});};form.onsubmit=e=>{e.preventDefault();saveEntry(form);};host.querySelector('#ledgerClear').onclick=()=>renderLedger();host.querySelectorAll('[data-ledger-edit]').forEach(b=>b.onclick=()=>{if(!isUnlocked()){askUnlock();return;}renderLedger(+b.dataset.ledgerEdit);scrollTo({top:0,behavior:'smooth'});});host.querySelectorAll('[data-ledger-del]').forEach(b=>b.onclick=()=>deleteEntry(+b.dataset.ledgerDel));const sf=host.querySelector('#snapshotForm');sf.onsubmit=e=>{e.preventDefault();saveSnapshot(sf);};
+  const form=host.querySelector('#ledgerForm');form.querySelector('[name="type"]').onchange=e=>{form.querySelector('.ledger-fields').innerHTML=fieldsFor(e.target.value,state,{});};form.onsubmit=e=>{e.preventDefault();guarded(form.querySelector('button[type="submit"]'),()=>saveEntry(form));};host.querySelector('#ledgerClear').onclick=()=>renderLedger();host.querySelectorAll('[data-ledger-edit]').forEach(b=>b.onclick=()=>{if(!isUnlocked()){askUnlock();return;}renderLedger(+b.dataset.ledgerEdit);scrollTo({top:0,behavior:'smooth'});});host.querySelectorAll('[data-ledger-del]').forEach(b=>b.onclick=()=>guarded(b,()=>deleteEntry(+b.dataset.ledgerDel)));const sf=host.querySelector('#snapshotForm');sf.onsubmit=e=>{e.preventDefault();saveSnapshot(sf);};
 }
 
 function boot(){

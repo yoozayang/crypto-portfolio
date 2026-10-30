@@ -1,11 +1,12 @@
-import {loadSeed,loadState,saveState} from './records.js?v=20261030-1930';
-import {mountApp} from './display.js?v=20260930-2225';
+import {loadSeed,loadState,showFlash,reconcilePendingWrites} from './records.js';
+import {mountApp} from './display.js';
 
 (async()=>{
   const {data:seed,labels}=await loadSeed();
   let state=loadState(seed);
-  saveState(state);
   mountApp({state,seed,labels,setState(next){state=next;}});
+  showFlash();
+  await reconcilePendingWrites();
 })().catch(err=>{
   console.error(err);
   document.querySelector('#dashboard').innerHTML=`<div class="notice bad">載入失敗：${String(err.message||err)}</div>`;

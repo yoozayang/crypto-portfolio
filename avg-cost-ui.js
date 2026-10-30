@@ -1,4 +1,4 @@
-import {reconciledPortfolio,marketValue} from './calculations.js?v=20260907-1525';
+import {reconciledPortfolio,marketValue} from './calculations.js';
 
 const STORAGE_KEY='cryptoPortfolioV1';
 const fmt=(n,d=2)=>Number.isFinite(+n)?(+n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
