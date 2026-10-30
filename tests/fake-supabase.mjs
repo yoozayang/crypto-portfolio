@@ -2,7 +2,7 @@
 // plain INSERT fails with 409 on an existing event_key, PATCH/DELETE apply eq filters and honour return=representation.
 export function createFakeSupabase(seedRows=[]){
   const rows=new Map(seedRows.map(r=>[r.event_key,{created_at:'2026-09-11T08:44:42.950994+00:00',...structuredClone(r)}]));
-  const db={rows,log:[],hooks:{}};
+  const db={rows,log:[],hooks:{},tables:{}};
   const parse=(raw)=>{
     const u=new URL(raw);const table=u.pathname.split('/rest/v1/')[1];const filters=[];
     for(const [k,v] of u.searchParams){
@@ -30,7 +30,7 @@ export function createFakeSupabase(seedRows=[]){
     const prefer=String(headers.Prefer||headers.prefer||'');
     const representation=prefer.includes('return=representation');
     if(table!=='portfolio_events'){
-      if(method==='GET')return json(200,[]);
+      if(method==='GET')return json(200,structuredClone(db.tables[table]||[]));
       return json(201);
     }
     if(method==='GET'){
@@ -68,3 +68,8 @@ export const productionLikeRows=()=>[
   row('ledger',{id:3,seq:32,date:'2026-10-30',type:'transfer',asset:'STABLE',qty:3586,amountU:3586,fromExchange:'MAX',toExchange:'OKX',feeAsset:'',feeQty:0,warehouse:'第二倉',note:''},'2026-10-30T10:35:07.151867+00:00'),
   row('strategy',{id:6,type:'策略結束',exchange:'幣安',handling:'併回主資金',invested:8000,realized:150,strategy:'BTC現貨網格',recovered:8150,warehouse:'第一倉'})
 ];
+// Mirrors production settings on 2026-10-30 (ONDO/ZRO disabled, 其他 typed as other).
+export const productionLikeSettings=()=>({
+  asset_settings:[['BTC',10,true],['ETH',20,true],['BNB',30,true],['ADA',40,true],['SOL',50,true],['ONDO',60,false],['ZRO',70,false],['MSTR',80,true]].map(([code,sort_order,enabled])=>({code,display_name:code,enabled,price_enabled:true,price_source:'binance_spot',price_symbol:code==='MSTR'?'MSTRBUSDT':`${code}USDT`,sort_order,note:''})),
+  location_settings:[['external','外部資金','external',10],['binance','幣安','exchange',20],['max','MAX','exchange',30],['okx','OKX','exchange',40],['bitfinex','Bitfinex','exchange',50],['ledger','Ledger','wallet',60],['metamask','MetaMask','wallet',70],['other','其他','other',90]].map(([id,label,type,sort_order])=>({id,label,type,enabled:true,sort_order,note:''}))
+});

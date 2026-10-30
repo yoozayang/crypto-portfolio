@@ -6,7 +6,7 @@ import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
-import {createFakeSupabase,productionLikeRows} from './fake-supabase.mjs';
+import {createFakeSupabase,productionLikeRows,productionLikeSettings} from './fake-supabase.mjs';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
 const types={'.html':'text/html','.js':'text/javascript','.json':'application/json','.css':'text/css'};
@@ -23,8 +23,8 @@ before(async()=>{
 });
 after(async()=>{await browser?.close();server?.close();});
 
-async function open({unlocked=true,acceptDialogs=true}={}){
-  const db=createFakeSupabase(productionLikeRows());
+async function open({unlocked=true,acceptDialogs=true,settings=productionLikeSettings()}={}){
+  const db=createFakeSupabase(productionLikeRows());db.tables=settings;
   const context=await browser.newContext();
   if(unlocked)await context.addInitScript(()=>sessionStorage.setItem('cryptoPortfolioEditUnlocked','1'));
   const binance={quotes:{BTCUSDT:80000,ETHUSDT:2750,DOGEUSDT:0.1234},requested:[]};
@@ -266,5 +266,50 @@ test('目前幣價 tab: second tab, average buy price, add by search, remove mod
   await page.reload();await page.click('[data-tab="prices"]');await page.waitForSelector('#prices .price-board');
   assert.deepEqual(await page.$$eval('#prices .price-box strong',e=>e.map(x=>x.textContent)).then(c=>[c.includes('BTC'),c.includes('DOGE')]),[false,true]);
   assert.deepEqual(errors,[]);
+  await context.close();
+});
+
+const optionsOf=(page,sel)=>page.$$eval(`${sel} option`,o=>o.map(x=>x.value));
+test('設定 tab: settings live in their own tab, and form option lists follow them',async()=>{
+  const {page,context}=await open();
+  const tabs=await page.$$eval('#tabs button',bs=>bs.map(b=>b.textContent));
+  assert.deepEqual(tabs.slice(-2),['備份','設定']);
+  await page.click('[data-tab="settings"]');
+  await page.waitForSelector('#settings #settingsAdmin');
+  assert.equal(await page.$('#backup #settingsAdmin'),null);
+  // 出入金 form: enabled exchanges / assets in settings order, disabled ONDO and ZRO hidden
+  await openLedgerTab(page);
+  assert.deepEqual(await optionsOf(page,'#ledgerForm [name="exchange"]'),['幣安','MAX','OKX','Bitfinex']);
+  assert.deepEqual(await optionsOf(page,'#ledgerForm [name="asset"]'),['BTC','ETH','BNB','ADA','SOL','MSTR','STABLE']);
+  await page.selectOption('#ledgerForm [name="type"]','transfer');
+  assert.equal(await page.$eval('#ledgerForm [name="fromExchange"]',s=>s.value),'MAX');
+  assert.equal(await page.$eval('#ledgerForm [name="toExchange"]',s=>s.value),'幣安');
+  // 策略結算: exchanges plus platform / other places, so 其他 is kept
+  await page.click('[data-tab="transactions"]');
+  await page.waitForSelector('#strategySettlementForm');
+  assert.deepEqual(await optionsOf(page,'#strategySettlementForm [name="exchange"]'),['幣安','MAX','OKX','Bitfinex','其他']);
+  await context.close();
+});
+
+test('a disabled exchange stays selected when editing an older record',async()=>{
+  const settings=productionLikeSettings();settings.location_settings.find(l=>l.id==='max').enabled=false;
+  const {page,context}=await open({settings});
+  await openLedgerTab(page);
+  assert.ok(!(await optionsOf(page,'#ledgerForm [name="exchange"]')).includes('MAX'),'new entries cannot pick a disabled exchange');
+  await page.click('[data-ledger-edit="2"]');
+  await page.waitForSelector('#ledgerForm [name="editId"][value="2"]',{state:'attached'});
+  assert.equal(await page.$eval('#ledgerForm [name="exchange"]',s=>s.value),'MAX');
+  await context.close();
+});
+
+test('after saving a setting the page returns to the 設定 tab',async()=>{
+  const {page,context}=await open();
+  await page.click('[data-tab="settings"]');
+  await page.waitForSelector('#locationSettingForm');
+  await page.fill('#locationSettingForm [name="label"]','Kraken');
+  await markPage(page);
+  await page.click('#locationSettingForm button[type="submit"]');
+  await reloaded(page);
+  await page.waitForFunction(()=>!document.querySelector('#settings').classList.contains('hidden'));
   await context.close();
 });

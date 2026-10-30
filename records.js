@@ -1,6 +1,6 @@
 import {loadRemoteCollections,loadRemoteSettings,applyEventChanges,planEventChanges,eventKey,samePayload,clean} from './supabase-data.js';
 // Must equal version.json and the ?v= values in index.html; update all three with `node tools/stamp-build.mjs`.
-export const BUILD='20261031-004237';
+export const BUILD='20261031-005839';
 export const STORAGE_KEY='cryptoPortfolioV1';
 const JOURNAL_KEY='cryptoPortfolioPendingWrites',FLASH_KEY='cryptoPortfolioFlash',UNLOCK_KEY='cryptoPortfolioEditUnlocked';
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -45,6 +45,13 @@ function migrate(state,seed){
   state.transactions=clone(seed.transactions||[]);state.strategySettlements=clone(seed.strategySettlements||[]);state.ledgerEntries=clone(seed.ledgerEntries||[]);for(const t of state.transactions)if(!t.seq)t.seq=+t.id||0;normalizeSeq(state);state.dataVersion=14;return state;
 }
 export function loadState(seed){let existing=null;try{existing=JSON.parse(localStorage.getItem(STORAGE_KEY));}catch{}const state=migrate(existing||clone(seed),seed);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));markReady(state);return state;}
+// Form option lists come from 設定 (asset_settings / location_settings): enabled entries only, in sort order.
+const bySort=(a,b)=>(+a.sortOrder||100)-(+b.sortOrder||100);
+export const enabledAssets=state=>(state?.assetSettings||[]).filter(x=>x.enabled).sort(bySort).map(x=>x.code);
+export const enabledLocations=(state,types=['exchange'])=>(state?.locationSettings||[]).filter(x=>x.enabled&&types.includes(x.type)).sort(bySort).map(x=>x.label);
+// A value already stored on a record stays selectable after it is disabled, so editing never silently changes it.
+export const withCurrent=(list,current)=>current&&!list.includes(current)?[current,...list]:list;
+export const preferred=(list,...wanted)=>wanted.find(w=>list.includes(w))??list[0]??'';
 export function readCachedState(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch{return null}}
 export function nextEventSeq(state){normalizeSeq(state);const n=state.nextEventSeq++;return n;}
 // Local cache only (prices, plans, snapshots). Financial records are never written here; they reach the

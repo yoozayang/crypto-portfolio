@@ -9,7 +9,8 @@
     "transactions": "交易紀錄",
     "plans": "投資計畫",
     "prices": "目前幣價",
-    "backup": "備份 / 設定"
+    "backup": "備份",
+    "settings": "設定"
   },
   "dashboard": {
     "marketValue": "目前市值",

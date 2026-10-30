@@ -252,3 +252,16 @@ test('duplicate ids inside one state are refused instead of collapsing records',
   await assert.rejects(records.commitChange(loaded,next,{label:'dup'}),/紀錄編號重複/);
   assert.equal(writes().length,0);
 });
+
+test('form option lists: enabled settings in sort order, current value kept, preferred default',async()=>{
+  const state={assetSettings:[{code:'ETH',enabled:true,sortOrder:20},{code:'BTC',enabled:true,sortOrder:10},{code:'ONDO',enabled:false,sortOrder:5}],
+    locationSettings:[{label:'MAX',type:'exchange',enabled:true,sortOrder:30},{label:'幣安',type:'exchange',enabled:true,sortOrder:20},{label:'Ledger',type:'wallet',enabled:true,sortOrder:1},{label:'其他',type:'other',enabled:true,sortOrder:90},{label:'Kraken',type:'exchange',enabled:false,sortOrder:1}]};
+  assert.deepEqual(records.enabledAssets(state),['BTC','ETH']);
+  assert.deepEqual(records.enabledLocations(state),['幣安','MAX']);
+  assert.deepEqual(records.enabledLocations(state,['exchange','other']),['幣安','MAX','其他']);
+  assert.deepEqual(records.withCurrent(['幣安','MAX'],'Kraken'),['Kraken','幣安','MAX']);
+  assert.deepEqual(records.withCurrent(['幣安','MAX'],''),['幣安','MAX']);
+  assert.equal(records.preferred(['幣安','MAX'],'OKX','MAX'),'MAX');
+  assert.equal(records.preferred(['幣安','MAX'],'OKX'),'幣安');
+  assert.equal(records.preferred([],'OKX'),'');
+});

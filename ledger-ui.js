@@ -1,4 +1,4 @@
-import {STORAGE_KEY,nextEventSeq,saveState,commitChange,reloadAfterSave,stateReady} from './records.js';
+import {STORAGE_KEY,nextEventSeq,saveState,commitChange,reloadAfterSave,stateReady,enabledAssets,enabledLocations,withCurrent,preferred} from './records.js';
 import {ledgerMetrics,currentActualHoldings} from './calculations.js';
 
 const load=()=>JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
@@ -6,7 +6,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=n=>Number.isFinite(+n)?(+n).toLocaleString('en-US',{maximumFractionDigits:2}):'—';
 const today=()=>new Date().toISOString().slice(0,10);
 const nextId=list=>Math.max(0,...(list||[]).map(x=>+x.id||0))+1;
-const assetList=state=>[...new Set([...(state.assets||[]).filter(a=>!['CASH','OTHER'].includes(a)),'STABLE'])];
+const assetList=state=>[...enabledAssets(state).filter(a=>!['CASH','OTHER','STABLE'].includes(a)),'STABLE'];
 const assetName=a=>a==='STABLE'?'USDT/USDC':a;
 const isUnlocked=()=>window.cryptoPortfolioEditLock?.isUnlocked?.()??true;
 const askUnlock=()=>window.cryptoPortfolioEditLock?.open?.();
@@ -31,11 +31,13 @@ function input(name,label,value='',type='number',extra='step="any"'){return `<la
 const common=(state,e={})=>`${select('warehouse','倉位',['第一倉','第二倉'],e.warehouse||'第二倉')}${input('date','日期',e.date||today(),'date','')}`;
 
 function fieldsFor(type,state,e={}){
-  const assets=assetList(state).map(a=>({value:a,label:assetName(a)})),ex=state.exchanges||[];
-  if(type==='deposit'||type==='withdraw')return `${common(state,e)}${select('exchange','交易所',ex,e.exchange||'幣安')}${select('asset','資產',assets,e.asset||'STABLE')}${input('amountU','折算金額（U）',e.amountU||'')}${input('qty','資產數量（穩定幣可留白）',e.qty||'')}`;
-  if(type==='income')return `${common(state,e)}${select('exchange','交易所',ex,e.exchange||'幣安')}${select('incomeKind','收益類型',['Earn','Staking','空投','Cashback','其他'],e.incomeKind||'Earn')}${select('asset','收到資產',assets,e.asset||'STABLE')}${input('amountU','入帳價值（U）',e.amountU||'')}${input('qty','收到數量',e.qty||'')}`;
-  if(type==='transfer')return `${common(state,e)}${select('fromExchange','轉出交易所',ex,e.fromExchange||'MAX')}${select('toExchange','轉入交易所',ex,e.toExchange||'幣安')}${select('asset','資產',assets,e.asset||'STABLE')}${input('qty','轉帳數量 / 金額',e.qty||'')}${select('feeAsset','手續費幣種',[{value:'',label:'—'},...assets],e.feeAsset||'')}${input('feeQty','手續費數量',e.feeQty||0)}`;
-  if(type==='swap')return `${common(state,e)}${select('fromExchange','賣出交易所',ex,e.fromExchange||'MAX')}${select('fromAsset','賣出資產',assets.filter(x=>x.value!=='STABLE'),e.fromAsset||'ETH')}${input('fromQty','賣出數量',e.fromQty||'')}${input('sellAmountU','賣出所得（U）',e.sellAmountU||'')}${select('toExchange','買入交易所',ex,e.toExchange||'幣安')}${select('toAsset','買入資產',assets.filter(x=>x.value!=='STABLE'),e.toAsset||'BTC')}${input('toQty','買入數量',e.toQty||'')}${input('buyAmountU','買入金額（U）',e.buyAmountU||e.sellAmountU||'')}`;
+  const ex=enabledLocations(state),coins=assetList(state);
+  const exSel=(name,label,cur,...pref)=>select(name,label,withCurrent(ex,cur),cur||preferred(ex,...pref));
+  const assetSel=(name,label,cur,fallback,{stable=true,blank=false}={})=>{const list=withCurrent(coins.filter(a=>stable||a!=='STABLE'),cur),opts=list.map(a=>({value:a,label:assetName(a)}));return select(name,label,blank?[{value:'',label:'—'},...opts]:opts,cur||(blank?'':preferred(list,fallback)));};
+  if(type==='deposit'||type==='withdraw')return `${common(state,e)}${exSel('exchange','交易所',e.exchange,'幣安')}${assetSel('asset','資產',e.asset,'STABLE')}${input('amountU','折算金額（U）',e.amountU||'')}${input('qty','資產數量（穩定幣可留白）',e.qty||'')}`;
+  if(type==='income')return `${common(state,e)}${exSel('exchange','交易所',e.exchange,'幣安')}${select('incomeKind','收益類型',['Earn','Staking','空投','Cashback','其他'],e.incomeKind||'Earn')}${assetSel('asset','收到資產',e.asset,'STABLE')}${input('amountU','入帳價值（U）',e.amountU||'')}${input('qty','收到數量',e.qty||'')}`;
+  if(type==='transfer')return `${common(state,e)}${exSel('fromExchange','轉出交易所',e.fromExchange,'MAX')}${exSel('toExchange','轉入交易所',e.toExchange,'幣安')}${assetSel('asset','資產',e.asset,'STABLE')}${input('qty','轉帳數量 / 金額',e.qty||'')}${assetSel('feeAsset','手續費幣種',e.feeAsset,'',{blank:true})}${input('feeQty','手續費數量',e.feeQty||0)}`;
+  if(type==='swap')return `${common(state,e)}${exSel('fromExchange','賣出交易所',e.fromExchange,'MAX')}${assetSel('fromAsset','賣出資產',e.fromAsset,'ETH',{stable:false})}${input('fromQty','賣出數量',e.fromQty||'')}${input('sellAmountU','賣出所得（U）',e.sellAmountU||'')}${exSel('toExchange','買入交易所',e.toExchange,'幣安')}${assetSel('toAsset','買入資產',e.toAsset,'BTC',{stable:false})}${input('toQty','買入數量',e.toQty||'')}${input('buyAmountU','買入金額（U）',e.buyAmountU||e.sellAmountU||'')}`;
   return '';
 }
 

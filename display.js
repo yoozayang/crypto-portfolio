@@ -59,5 +59,8 @@ export function mountApp({state,seed,labels,setState}){
 
   if(!document.querySelector('#holdingTradeTooltipStyle')){const st=document.createElement('style');st.id='holdingTradeTooltipStyle';st.textContent='.holding-card.has-trades{position:relative;cursor:help}.holding-card.has-trades:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.holding-trade-tooltip{display:none;position:absolute;z-index:100;top:calc(100% + 6px);left:0;width:max-content;min-width:310px;max-width:min(440px,calc(100vw - 36px));max-height:270px;overflow:auto;padding:10px 12px;background:#0a1225;border:1px solid var(--accent);border-radius:10px;box-shadow:0 14px 32px #0009;color:var(--text);font-size:12px}.holding-card.has-trades:hover .holding-trade-tooltip,.holding-card.has-trades:focus .holding-trade-tooltip,.holding-card.has-trades:focus-within .holding-trade-tooltip{display:block}.holding-trade-title{font-weight:700;margin-bottom:8px}.holding-trade-row{display:grid;grid-template-columns:42px 34px minmax(75px,1fr) minmax(75px,1fr);gap:9px;padding:5px 0;border-top:1px solid var(--line);white-space:nowrap}.holding-trade-row span:nth-child(n+3){text-align:right}@media(max-width:620px){.holding-trade-tooltip{left:0;max-width:calc(100vw - 46px)}}';document.head.appendChild(st);}
   function renderAll(){renderDashboard();renderTransactions();renderPlans();renderPrices();renderBackup()}
-  q('#refreshPrices').onclick=refreshPrices;renderAll();refreshPrices();
+  q('#refreshPrices').onclick=refreshPrices;renderAll();
+  // Return to the tab a save came from (the ledger tab is restored by ledger-ui.js).
+  const back=sessionStorage.getItem('cryptoPortfolioReturnTab');if(back&&back!=='ledger'&&document.getElementById(back)){sessionStorage.removeItem('cryptoPortfolioReturnTab');switchTab(back)}
+  refreshPrices();
 }

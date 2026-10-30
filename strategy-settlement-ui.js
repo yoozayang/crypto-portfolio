@@ -1,4 +1,4 @@
-import {STORAGE_KEY,commitChange,reloadAfterSave,stateReady} from './records.js';
+import {STORAGE_KEY,commitChange,reloadAfterSave,stateReady,enabledLocations,withCurrent,preferred} from './records.js';
 const clone=o=>JSON.parse(JSON.stringify(o));
 // Resolves only after Supabase confirmed the change; edits work on a draft so a failed save leaves the in-memory state untouched.
 const save=async(btn,before,draft,label)=>{if(btn.disabled)return;btn.disabled=true;try{await commitChange(before,draft,{label});reloadAfterSave('',`${label}已儲存到雲端`);}catch(err){btn.disabled=false;alert(`儲存失敗：${err.message||String(err)}`);}};
@@ -10,11 +10,11 @@ const loadState=()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'n
 
 function formHtml(row={}){
   const disabled=unlocked()?'':'disabled';
-  const option=(value,current)=>`<option value="${value}" ${value===current?'selected':''}>${value}</option>`;
+  const option=(value,current)=>`<option value="${esc(value)}" ${value===current?'selected':''}>${esc(value)}</option>`;
   return `<form id="strategySettlementForm" class="form-grid">
     <input type="hidden" name="id" value="${row.id||''}">
     <label><span>倉位</span><select name="warehouse" ${disabled}>${['第一倉','第二倉'].map(v=>option(v,row.warehouse||'第一倉')).join('')}</select></label>
-    <label><span>交易所</span><select name="exchange" ${disabled}>${['幣安','MAX','OKX','Bitfinex','其他'].map(v=>option(v,row.exchange||'幣安')).join('')}</select></label>
+    <label><span>交易所</span><select name="exchange" ${disabled}>${(places=>withCurrent(places,row.exchange).map(v=>option(v,row.exchange||preferred(places,'幣安'))).join(''))(enabledLocations(loadState(),['exchange','platform','other']))}</select></label>
     <label><span>策略</span><input name="strategy" ${disabled} value="${esc(row.strategy||'ETH現貨網格')}" placeholder="例如：ETH現貨網格"></label>
     <label><span>結算類型</span><select name="type" ${disabled}>${['策略結束','策略結束/待確認','部分結算'].map(v=>option(v,row.type||'策略結束')).join('')}</select></label>
     <label><span>投入金額（U）</span><input name="invested" type="number" step="any" ${disabled} value="${row.invested??''}"></label>
