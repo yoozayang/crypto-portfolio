@@ -27,7 +27,14 @@ async function open({unlocked=true,acceptDialogs=true}={}){
   const db=createFakeSupabase(productionLikeRows());
   const context=await browser.newContext();
   if(unlocked)await context.addInitScript(()=>sessionStorage.setItem('cryptoPortfolioEditUnlocked','1'));
-  await context.route('https://api.binance.com/**',r=>r.fulfill({status:404,body:''}));
+  const binance={quotes:{BTCUSDT:80000,ETHUSDT:2750,DOGEUSDT:0.1234},requested:[]};
+  await context.route('https://api.binance.com/**',r=>{
+    const u=new URL(r.request().url());
+    if(u.pathname.endsWith('/ticker/price'))return r.fulfill({contentType:'application/json',body:JSON.stringify(['BTCUSDT','ETHUSDT','DOGEUSDT','BABYDOGEUSDT','DOGSUSDT'].map(symbol=>({symbol,price:'1'})))});
+    const symbol=u.searchParams.get('symbol');binance.requested.push(symbol);
+    if(!binance.quotes[symbol])return r.fulfill({status:400,body:'{}'});
+    r.fulfill({contentType:'application/json',body:JSON.stringify({lastPrice:String(binance.quotes[symbol]),priceChangePercent:'2.5'})});
+  });
   await context.route('https://uyxfppzinqnyofuwshye.supabase.co/**',async route=>{
     const req=route.request();
     let out;
@@ -41,7 +48,7 @@ async function open({unlocked=true,acceptDialogs=true}={}){
   const errors=[];page.on('pageerror',e=>errors.push(e));
   await page.goto(base);
   await page.waitForSelector('#dashboard .card');
-  return {db,page,context,dialogs,errors};
+  return {db,page,context,dialogs,errors,binance};
 }
 const markPage=page=>page.evaluate(()=>{window.__notReloaded=true;});
 const reloaded=page=>page.waitForFunction(()=>!window.__notReloaded&&document.querySelector('#dashboard .card'));
@@ -219,5 +226,45 @@ test('strategy settlement form is confirmed by Supabase before reload',async()=>
   await reloaded(page);
   assert.equal(db.payload('strategy:7').realized,100);
   assert.deepEqual(db.payload('strategy:6').invested,8000,'existing settlement untouched');
+  await context.close();
+});
+
+test('目前幣價 tab: second tab, average buy price, add by search, remove mode cancelled by clicking elsewhere',async()=>{
+  const {page,context,binance,errors}=await open({unlocked:false});
+  await page.emulateMedia({reducedMotion:'reduce'}); // the remove-mode wiggle is disabled under reduced motion
+  assert.deepEqual(await page.$$eval('#tabs button',bs=>bs.slice(0,2).map(b=>b.textContent)),['Dashboard','目前幣價']);
+  await page.click('[data-tab="prices"]');
+  await page.waitForSelector('#prices .price-board');
+  // ETH: 第一倉 bought 1 @ 2500, now 2750 → +10.00%
+  const ethCard=page.locator('.price-box',{has:page.locator('strong',{hasText:/^ETH$/})});
+  assert.match(await ethCard.locator('.price-avg').textContent(),/第一倉均價 2,500\.00 \+10\.00%/);
+  // add DOGE by searching its code
+  await page.click('#priceAddToggle');
+  await page.fill('#priceSearchInput','dog');
+  await page.waitForSelector('[data-price-add="DOGE"]');
+  await page.click('[data-price-add="DOGE"]');
+  const doge=page.locator('.price-box',{has:page.locator('strong',{hasText:/^DOGE$/})});
+  await doge.locator('.price-value',{hasText:'0.123400'}).waitFor();
+  assert.match(await doge.textContent(),/僅顯示，不納入計算/);
+  // remove mode: badges appear, clicking elsewhere cancels without removing
+  await page.click('#priceRemoveToggle');
+  assert.equal(await page.isVisible('[data-price-remove="BTC"]'),true);
+  await page.click('h2:has-text("目前幣價")');
+  assert.equal(await page.isVisible('[data-price-remove="BTC"]'),false);
+  assert.equal(await page.locator('.price-box strong',{hasText:/^BTC$/}).count(),1);
+  // remove BTC from the view: display only, BTC price is still refreshed for calculations
+  await page.click('#priceRemoveToggle');
+  await page.click('[data-price-remove="BTC"]');
+  assert.equal(await page.locator('.price-box strong',{hasText:/^BTC$/}).count(),0);
+  await page.keyboard.press('Escape');
+  binance.requested.length=0;binance.quotes.BTCUSDT=81000;
+  await page.click('#refreshPrices');
+  await page.waitForFunction(()=>JSON.parse(localStorage.cryptoPortfolioV1).prices.BTC===81000);
+  assert.ok(binance.requested.includes('BTCUSDT'));
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.cryptoPortfolioV1).prices.DOGE),undefined,'view-only quotes never enter calculation prices');
+  // the list survives a reload
+  await page.reload();await page.click('[data-tab="prices"]');await page.waitForSelector('#prices .price-board');
+  assert.deepEqual(await page.$$eval('#prices .price-box strong',e=>e.map(x=>x.textContent)).then(c=>[c.includes('BTC'),c.includes('DOGE')]),[false,true]);
+  assert.deepEqual(errors,[]);
   await context.close();
 });

@@ -2,7 +2,7 @@
   "name": "crypto-portfolio",
   "private": true,
   "scripts": {
-    "test": "node --test tests/persistence.test.mjs tests/module-graph.test.mjs",
+    "test": "node --test tests/persistence.test.mjs tests/module-graph.test.mjs tests/price-board.test.mjs",
     "test:e2e": "node --test --test-concurrency=1 tests/e2e.test.mjs",
     "stamp": "node tools/stamp-build.mjs"
   },
