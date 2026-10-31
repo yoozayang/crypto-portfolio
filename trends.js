@@ -7,9 +7,10 @@ function composition(items,total){return bars(items,total)+'<div class="trend-le
 function snapshotValue(s,prices){let total=0;for(const [a,p] of Object.entries(s.holdings||{})){if(a==='CASH'||a==='STABLE'||a==='OTHER')total+=Number(p?.value||0);else total+=Number(p?.qty||0)*Number(prices?.[a]||0)}return total}
 let dailyHistory=[];
 export async function loadDailyHistory(){
- const r=await fetch('https://uyxfppzinqnyofuwshye.supabase.co/rest/v1/portfolio_daily_snapshots?select=snapshot_date,total_value,deposit_total,withdrawal_total&order=snapshot_date.asc&limit=1000',{headers:{apikey:'sb_publishable_bx9oTbaaOgMrpRfqQ4fYKQ_3EU7JqKG'}});
+ const r=await fetch('https://uyxfppzinqnyofuwshye.supabase.co/rest/v1/portfolio_daily_snapshots?select=snapshot_date,snapshot_slot,captured_at,total_value,deposit_total,withdrawal_total&order=captured_at.asc&limit=3000',{headers:{apikey:'sb_publishable_bx9oTbaaOgMrpRfqQ4fYKQ_3EU7JqKG'}});
  if(!r.ok)throw Error('讀取每日資產快照失敗：'+r.status);
  dailyHistory=await r.json();
+ await loadMilestones();
 }
 export function renderTrends(state){
  const root=document.querySelector('#trends');if(!root)return;window.__trendState=state;
@@ -27,29 +28,68 @@ export function renderTrends(state){
  '<div class="card section"><h2>最近資金流向</h2><p class="subtle">只列入金／出金，不將倉內轉帳算成新投入</p>'+(changes.length?'<div class="trend-flows">'+changes.map(x=>'<div><span>'+esc(x.date)+'</span><span>'+x.label+'</span><strong>'+fmt(x.value)+' U</strong></div>').join('')+'</div>':'<p class="subtle">尚無入出金記錄</p>')+'</div>';
 }
 
-let chartRange='all';
+
+let chartScale='day',chartWindow='all',milestones=[];
+const key='sb_publishable_bx9oTbaaOgMrpRfqQ4fYKQ_3EU7JqKG',base='https://uyxfppzinqnyofuwshye.supabase.co/rest/v1/';
+const head={apikey:key,Authorization:'Bearer '+key};
+export async function loadMilestones(){
+ const r=await fetch(base+'portfolio_events?select=payload&event_kind=eq.milestone&order=event_date.asc',{headers:head,cache:'no-store'});
+ if(!r.ok)throw Error('大事件讀取失敗 '+r.status);
+ milestones=(await r.json()).map(x=>x.payload);
+}
+const bucket=(date,scale)=>{const d=new Date(date+'T00:00:00Z');if(scale==='week'){d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return d.toISOString().slice(0,10)}return scale==='month'?date.slice(0,7):date};
 function trendChartMarkup(ledger){
- const all=dailyHistory.filter(x=>Number.isFinite(+x.total_value)).sort((a,b)=>a.snapshot_date.localeCompare(b.snapshot_date));
- const end=all.at(-1)?.snapshot_date;
- const cutoff=chartRange==='all'||!end?'':new Date(Date.parse(end+'T00:00:00Z')-Number(chartRange)*86400000).toISOString().slice(0,10);
- const rows=all.filter(x=>!cutoff||x.snapshot_date>=cutoff);
- const latest=rows.at(-1),first=rows[0],change=first&&latest?Number(latest.total_value)-Number(first.total_value):0;
- const netFlow=first&&latest?(Number(latest.deposit_total)-Number(first.deposit_total))-(Number(latest.withdrawal_total)-Number(first.withdrawal_total)):0;
- const adjusted=change-netFlow;
- const btns=[['7','7天'],['30','30天'],['90','90天'],['all','全部']].map(([key,label])=>'<button type="button" data-trend-range="'+key+'" class="'+(chartRange===key?'active':'')+'">'+label+'</button>').join('');
- let graph='<div class="notice">尚無每日快照，排程成功後會自動開始記錄</div>';
+ const all=[...dailyHistory].filter(x=>Number.isFinite(+x.total_value)).sort((a,b)=>String(a.captured_at).localeCompare(String(b.captured_at)));
+ const latest=all.at(-1),days={day:30,week:90,month:365};
+ const since=chartWindow==='all'||!latest?null:new Date(Date.parse(latest.captured_at)-Number(chartWindow)*86400000);
+ const raw=all.filter(x=>!since||new Date(x.captured_at)>=since);
+ // Daily: all 3 actual readings. Weekly/monthly: use the last captured valuation in each period.
+ const rows=chartScale==='day'?raw:Object.values(raw.reduce((map,r)=>{map[bucket(r.snapshot_date,chartScale)]=r;return map},{}));
+ const first=rows[0],last=rows.at(-1),change=first&&last?+last.total_value-(+first.total_value):0;
+ const net=first&&last?(+last.deposit_total-(+first.deposit_total))-(+last.withdrawal_total-(+first.withdrawal_total)):0;
+ const scales=[['day','日'],['week','週'],['month','月']].map(([v,label])=>'<button data-trend-scale="'+v+'" class="'+(chartScale===v?'active':'')+'">'+label+'</button>').join('');
+ const windows=[['7','7天'],['30','30天'],['90','90天'],['all','全部']].map(([v,label])=>'<button data-trend-window="'+v+'" class="'+(chartWindow===v?'active':'')+'">'+label+'</button>').join('');
+ let graph='<div class="notice">尚無歷史快照，GitHub Actions執行後開始累積</div>';
  if(rows.length){
-  const width=800,height=260,pad={l:62,r:18,t:22,b:34},values=rows.map(x=>Number(x.total_value)),min=Math.min(...values),max=Math.max(...values),spread=Math.max(max-min,max*.02,1),lo=Math.max(0,min-spread*.25),hi=max+spread*.25;
-  const x=i=>pad.l+(rows.length===1?.5:i/(rows.length-1))*(width-pad.l-pad.r),y=v=>pad.t+(hi-v)/(hi-lo)*(height-pad.t-pad.b);
-  const points=rows.map((r,i)=>[x(i),y(Number(r.total_value))]),line=points.map(([px,py],i)=>(i?'L':'M')+px.toFixed(2)+' '+py.toFixed(2)).join(' ');
-  const area=line+' L'+points.at(-1)[0]+' '+(height-pad.b)+' L'+points[0][0]+' '+(height-pad.b)+' Z';
-  const grid=[0,.25,.5,.75,1].map(t=>{const v=lo+(hi-lo)*t,yy=y(v);return '<line x1="'+pad.l+'" x2="'+(width-pad.r)+'" y1="'+yy+'" y2="'+yy+'" stroke="#34415d" stroke-dasharray="3 5"/><text x="'+(pad.l-8)+'" y="'+(yy+4)+'" fill="#9aabc8" font-size="11" text-anchor="end">'+Math.round(v).toLocaleString('en-US')+'</text>'}).join('');
-  const flow=ledger.filter(e=>['deposit','withdraw'].includes(e.type)&&rows.some(r=>r.snapshot_date===String(e.date).slice(0,10)));
-  const marks=flow.map(e=>{const i=rows.findIndex(r=>r.snapshot_date===String(e.date).slice(0,10)),px=x(i),py=y(Number(rows[i].total_value));return '<circle cx="'+px+'" cy="'+py+'" r="6" fill="'+(e.type==='deposit'?'#5bd69c':'#ff7d8b')+'" stroke="#0b1020" stroke-width="2"><title>'+esc(e.date+' '+e.exchange+' '+(e.type==='deposit'?'+':'−')+fmt(e.amountU)+' U')+'</title></circle>'}).join('');
-  const dots=rows.map((r,i)=>'<circle cx="'+points[i][0]+'" cy="'+points[i][1]+'" r="11" fill="transparent" data-trend-point="'+i+'" tabindex="0" role="button" aria-label="'+esc(r.snapshot_date+' '+fmt(r.total_value)+' U')+'"/>').join('');
-  graph='<div class="trend-chart-wrap"><svg class="trend-svg" viewBox="0 0 800 260" role="img" aria-label="每日總資產市值曲線圖">'+grid+'<path d="'+area+'" fill="#74a7ff" fill-opacity=".12"/><path d="'+line+'" stroke="#74a7ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+marks+dots+'<text x="'+pad.l+'" y="255" fill="#9aabc8" font-size="12">'+esc(rows[0].snapshot_date.slice(5))+'</text><text x="'+(width-pad.r)+'" y="255" fill="#9aabc8" font-size="12" text-anchor="end">'+esc(rows.at(-1).snapshot_date.slice(5))+'</text></svg></div><div class="trend-chart-tooltip" id="trendChartTooltip" aria-live="polite">點選曲線查看當日市值</div>';
+  const w=800,h=260,l=65,r=20,t=20,b=30,vals=rows.map(x=>+x.total_value),min=Math.min(...vals),max=Math.max(...vals),delta=Math.max(1,max-min,max*.02),low=Math.max(0,min-delta*.3),high=max+delta*.3;
+  const px=i=>l+(rows.length===1?.5:i/(rows.length-1))*(w-l-r),py=v=>t+(high-v)/(high-low)*(h-t-b);
+  const points=rows.map((x,i)=>[px(i),py(+x.total_value)]);
+  const path=points.map(([x,y],i)=>(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)).join(' ');
+  const grid=[0,.25,.5,.75,1].map(n=>{const y=py(low+(high-low)*n);return '<line x1="'+l+'" x2="'+(w-r)+'" y1="'+y+'" y2="'+y+'" stroke="#34415d" stroke-dasharray="3 5"/><text x="'+(l-7)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#9aabc8">'+Math.round(low+(high-low)*n).toLocaleString('en-US')+'</text>'}).join('');
+  const markers=[...ledger.filter(e=>e.type==='deposit'||e.type==='withdraw').map(e=>({date:e.date,label:(e.type==='deposit'?'入金 +':'出金 −')+fmt(e.amountU)+' U'+(e.exchange?' · '+e.exchange:''),kind:e.type})),...milestones.map(e=>({date:e.date,label:e.title,kind:'milestone'}))];
+  const markHtml=markers.map((e,idx)=>{const target=bucket(e.date,chartScale),i=rows.findIndex(x=>bucket(x.snapshot_date,chartScale)===target);if(i<0)return '';const [x,y]=points[i],color=e.kind==='deposit'?'#5bd69c':e.kind==='withdraw'?'#ff7d8b':'#f2a900';return '<circle cx="'+(x+(idx%3-1)*3)+'" cy="'+(y-9-(idx%3)*3)+'" r="3.5" fill="'+color+'" stroke="#0b1020" stroke-width="1" data-trend-mark="'+idx+'" tabindex="0" role="button"><title>'+esc(e.date+' · '+e.label)+'</title></circle>'}).join('');
+  const targets=rows.map((e,i)=>'<circle cx="'+points[i][0]+'" cy="'+points[i][1]+'" r="12" fill="transparent" tabindex="0" data-trend-point="'+i+'" role="button" aria-label="'+esc(e.captured_at+' '+fmt(e.total_value)+' U')+'"/>').join('');
+  graph='<div class="trend-chart-wrap"><svg class="trend-svg" viewBox="0 0 800 260" role="img" aria-label="總資產曲線">'+grid+'<path d="'+path+'" stroke="#74a7ff" stroke-width="2.5" fill="none"/>'+markHtml+targets+'<text x="'+l+'" y="255" font-size="12" fill="#9aabc8">'+esc(rows[0].snapshot_date.slice(5))+'</text><text x="'+(w-r)+'" y="255" font-size="12" text-anchor="end" fill="#9aabc8">'+esc(rows.at(-1).snapshot_date.slice(5))+'</text></svg></div><div id="trendChartTooltip" class="trend-chart-tooltip">靠近資料點或事件標記可查看內容</div>';
+  queueMicrotask(()=>{
+   document.querySelectorAll('[data-trend-point]').forEach(el=>{const show=()=>{const x=rows[+el.dataset.trendPoint];document.querySelector('#trendChartTooltip').textContent=new Date(x.captured_at).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false})+' · '+fmt(x.total_value)+' U'};el.addEventListener('pointerenter',show);el.addEventListener('focus',show);el.addEventListener('click',show)});
+   document.querySelectorAll('[data-trend-mark]').forEach(el=>{const show=()=>{const e=markers[+el.dataset.trendMark];document.querySelector('#trendChartTooltip').textContent=e.date+' · '+e.label};el.addEventListener('pointerenter',show);el.addEventListener('focus',show);el.addEventListener('click',show)});
+  });
  }
- const card='<div class="card trend-primary"><div class="trend-chart-head"><h2>每日總資產</h2><div class="trend-range">'+btns+'</div></div><div class="trend-chart-kpis"><div><small>最新快照</small><strong>'+(latest?fmt(latest.total_value)+' U':'—')+'</strong></div><div><small>期間變化</small><strong class="'+(change>=0?'good':'bad')+'">'+(rows.length>1?(change>=0?'+':'')+fmt(change)+' U':'—')+'</strong></div><div><small>扣除淨入金</small><strong class="'+(adjusted>=0?'good':'bad')+'">'+(rows.length>1?(adjusted>=0?'+':'')+fmt(adjusted)+' U':'—')+'</strong></div></div>'+graph+'<p class="subtle">每日快照記錄當時市值，綠點入金、紅點出金；內部轉帳不計入資金流</p></div>';
- queueMicrotask(()=>{document.querySelectorAll('[data-trend-range]').forEach(b=>b.onclick=()=>{chartRange=b.dataset.trendRange;const state=window.__trendState;if(state)renderTrends(state)});document.querySelectorAll('[data-trend-point]').forEach(b=>{const show=()=>{const row=rows[Number(b.dataset.trendPoint)];const el=document.querySelector('#trendChartTooltip');if(el)el.textContent=row.snapshot_date+'　'+fmt(row.total_value)+' U'};b.addEventListener('click',show);b.addEventListener('focus',show)})});
- return card;
+ queueMicrotask(()=>{
+  document.querySelectorAll('[data-trend-scale]').forEach(el=>el.onclick=()=>{chartScale=el.dataset.trendScale;renderTrends(window.__trendState)});
+  document.querySelectorAll('[data-trend-window]').forEach(el=>el.onclick=()=>{chartWindow=el.dataset.trendWindow;renderTrends(window.__trendState)});
+  document.querySelector('#milestoneAdd')?.addEventListener('click',()=>openMilestoneEditor());
+  document.querySelectorAll('[data-milestone-edit]').forEach(el=>el.onclick=()=>openMilestoneEditor(milestones.find(m=>m.id===el.dataset.milestoneEdit)));
+  document.querySelectorAll('[data-milestone-delete]').forEach(el=>el.onclick=()=>deleteMilestone(el.dataset.milestoneDelete));
+ });
+ return '<div class="card trend-primary"><div class="trend-chart-head"><h2>總資產走勢</h2><div class="trend-range">'+scales+'</div></div><div class="trend-range trend-windows">'+windows+'</div><div class="trend-chart-kpis"><div><small>最新快照</small><strong>'+(last?fmt(last.total_value)+' U':'—')+'</strong></div><div><small>期間變化</small><strong>'+(rows.length>1?(change>=0?'+':'')+fmt(change)+' U':'—')+'</strong></div><div><small>扣除淨入金</small><strong>'+(rows.length>1?(change-net>=0?'+':'')+fmt(change-net)+' U':'—')+'</strong></div></div>'+graph+'<p class="subtle">每日00:10、08:10、16:10記錄；週／月顯示期末值。小點標示入出金與大事件，靠近才顯示內容</p><div class="trend-events-head"><h2>大事件</h2><button type="button" class="btn" id="milestoneAdd">＋新增</button></div><div class="trend-event-list">'+(milestones.length?milestones.map(m=>'<div><span>'+esc(m.date)+' · '+esc(m.title)+'</span><span><button data-milestone-edit="'+esc(m.id)+'">編輯</button> <button data-milestone-delete="'+esc(m.id)+'">刪除</button></span></div>').join(''):'<p class="subtle">尚無手動事件</p>')+'</div></div>';
+}
+async function saveMilestone(old,title,date){
+ if(!window.cryptoPortfolioEditLock?.isUnlocked?.()){window.cryptoPortfolioEditLock?.open?.();return}
+ const {applyEventChanges}=await import('./supabase-data.js');
+ const item={id:old?.id||crypto.randomUUID(),date,title};
+ await applyEventChanges([{key:'milestone:'+item.id,kind:'milestone',before:old||null,after:item}]);
+ await loadMilestones();renderTrends(window.__trendState);
+}
+function openMilestoneEditor(old){
+ const title=prompt('大事件內容',old?.title||'');if(title===null||!title.trim())return;
+ const date=prompt('事件日期（YYYY-MM-DD）',old?.date||new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Taipei'}));
+ if(!date||!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||Number.isNaN(Date.parse(date))){alert('日期格式錯誤');return}
+ saveMilestone(old,title.trim(),date).catch(e=>alert('儲存失敗：'+e.message));
+}
+async function deleteMilestone(id){
+ if(!window.cryptoPortfolioEditLock?.isUnlocked?.()){window.cryptoPortfolioEditLock?.open?.();return}
+ if(!confirm('刪除此大事件？'))return;
+ const old=milestones.find(m=>m.id===id);if(!old)return;
+ try{const {applyEventChanges}=await import('./supabase-data.js');await applyEventChanges([{key:'milestone:'+id,kind:'milestone',before:old,after:null}]);await loadMilestones();renderTrends(window.__trendState)}catch(e){alert('刪除失敗：'+e.message)}
 }
