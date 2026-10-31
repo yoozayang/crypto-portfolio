@@ -34,7 +34,39 @@ export function mountApp({state,seed,labels,setState}){
   function renderTransactions(){const c=reconciledPortfolio(state);q('#transactions').innerHTML=`<div class="card"><h2>新增 / 修改交易</h2><form id="txForm" class="form-grid">${txForm()}</form></div><div class="table-wrap section"><table><thead><tr><th>#</th><th>倉位</th><th>日期</th><th>買賣</th><th>幣種</th><th>成交價U</th><th>數量</th><th>金額U</th><th>本筆已實現</th><th>操作</th></tr></thead><tbody>${[...c.replay.history].reverse().map(t=>`<tr><td>${t.id}</td><td>${t.warehouse}</td><td>${t.date}</td><td>${t.side}</td><td>${t.asset}</td><td>${fmt(t.price)}</td><td>${qty(t.qty)}</td><td>${fmt(t.amount)}</td><td>${t.side==='賣出'?signed(t.tradeRealized):'—'}</td><td><button data-edit="${t.id}">編輯</button> <button data-del="${t.id}">刪除</button></td></tr>`).join('')}</tbody></table></div>`;bindTx()}
   // Financial edits work on a draft; the screen and cache switch to it only after Supabase confirmed the change.
   async function commitTx(btn,draft,label){if(btn?.disabled)return;if(btn)btn.disabled=true;try{await commitChange(state,draft,{label});state=draft;setState(draft);renderAll();switchTab('transactions');}catch(err){if(btn)btn.disabled=false;alert(`儲存失敗：${err.message||String(err)}`);}}
-  function bindTx(){const f=q('#txForm');f.onsubmit=e=>{e.preventDefault();const draft=JSON.parse(JSON.stringify(state)),d=Object.fromEntries(new FormData(f)),id=d.id?+d.id:Math.max(0,...draft.transactions.map(x=>x.id))+1,old=draft.transactions.find(x=>x.id===id),obj={...(old||{}),id,warehouse:d.warehouse,exchange:d.exchange,date:d.date,side:d.side,asset:d.asset,price:+d.price||0,qty:+d.qty||0,amount:+d.amount||0,feeAsset:d.feeAsset,feeQty:+d.feeQty||0,costAdjustment:d.costAdjustment===''?null:+d.costAdjustment,reset:d.reset==='true',note:d.note||''},i=draft.transactions.findIndex(x=>x.id===id);i>=0?draft.transactions[i]=obj:draft.transactions.push(obj);commitTx(f.querySelector('button[type="submit"]'),draft,i>=0?`修改交易 #${id}`:`新增交易 #${id}`)};q('#cancelEdit').onclick=()=>renderTransactions();qa('[data-edit]').forEach(b=>b.onclick=()=>{const t=state.transactions.find(x=>x.id===+b.dataset.edit);q('#txForm').innerHTML=txForm(t);bindTx();scrollTo({top:0,behavior:'smooth'})});qa('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('刪除這筆交易？')){const draft=JSON.parse(JSON.stringify(state));draft.transactions=draft.transactions.filter(x=>x.id!==+b.dataset.del);commitTx(b,draft,`刪除交易 #${b.dataset.del}`)}})}
+  function bindTx(){
+    const f=q('#txForm');
+    const fields=['price','qty','amount'];
+    const hint=document.createElement('div');
+    hint.className='full subtle';
+    hint.setAttribute('aria-live','polite');
+    f.querySelector('[name="amount"]').closest('label').after(hint);
+    const edited=[];
+    const formatCalc=(n,d)=>Number(n.toFixed(d)).toString();
+    const refresh=()=>{
+      const values=Object.fromEntries(fields.map(k=>[k,Number(f.elements[k].value)]));
+      const filled=fields.filter(k=>f.elements[k].value.trim()!==''&&Number.isFinite(values[k])&&values[k]>0);
+      if(filled.length>=2){
+        const target=fields.find(k=>!filled.includes(k))||(edited.length>=2?fields.find(k=>!edited.slice(-2).includes(k)):null);
+        if(target){
+          const [price,qty,amount]=[values.price,values.qty,values.amount];
+          const calc=target==='amount'?price*qty:target==='qty'?amount/price:amount/qty;
+          if(Number.isFinite(calc)&&calc>0){f.elements[target].value=formatCalc(calc,target==='amount'?8:target==='qty'?10:8);values[target]=calc;}
+        }
+      }
+      const [p,q,a]=fields.map(k=>Number(f.elements[k].value));
+      if(p>0&&q>0&&a>0){
+        const delta=Math.abs(p*q-a),pct=delta/a*100;
+        hint.textContent=pct>0.1?`注意：成交價 × 數量與金額相差 ${delta.toFixed(2)} U（${pct.toFixed(2)}%），請核對手續費或成交資料`:'成交價 × 數量與金額一致（允許四捨五入）';
+        hint.style.color=pct>0.1?'#f5ad65':'';
+      }else hint.textContent='輸入任兩項（成交價、數量、金額），自動計算第三項';
+    };
+    for(const k of fields)f.elements[k].addEventListener('input',()=>{
+      const idx=edited.indexOf(k);if(idx!==-1)edited.splice(idx,1);edited.push(k);
+      refresh();
+    });
+    refresh();
+    f.onsubmit=e=>{e.preventDefault();const draft=JSON.parse(JSON.stringify(state)),d=Object.fromEntries(new FormData(f)),id=d.id?+d.id:Math.max(0,...draft.transactions.map(x=>x.id))+1,old=draft.transactions.find(x=>x.id===id),obj={...(old||{}),id,warehouse:d.warehouse,exchange:d.exchange,date:d.date,side:d.side,asset:d.asset,price:+d.price||0,qty:+d.qty||0,amount:+d.amount||0,feeAsset:d.feeAsset,feeQty:+d.feeQty||0,costAdjustment:d.costAdjustment===''?null:+d.costAdjustment,reset:d.reset==='true',note:d.note||''},i=draft.transactions.findIndex(x=>x.id===id);i>=0?draft.transactions[i]=obj:draft.transactions.push(obj);commitTx(f.querySelector('button[type="submit"]'),draft,i>=0?`修改交易 #${id}`:`新增交易 #${id}`)};q('#cancelEdit').onclick=()=>renderTransactions();qa('[data-edit]').forEach(b=>b.onclick=()=>{const t=state.transactions.find(x=>x.id===+b.dataset.edit);q('#txForm').innerHTML=txForm(t);bindTx();scrollTo({top:0,behavior:'smooth'})});qa('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('刪除這筆交易？')){const draft=JSON.parse(JSON.stringify(state));draft.transactions=draft.transactions.filter(x=>x.id!==+b.dataset.del);commitTx(b,draft,`刪除交易 #${b.dataset.del}`)}})}
 
   // 目前幣價: the shown coins come from price-board.js (display only). Cards backed by an asset setting keep the
   // price input the calculations use; coins added only for viewing show Binance quotes read-only.
