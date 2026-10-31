@@ -39,3 +39,5 @@
 .trend-svg{display:block;width:100%;height:auto;min-height:175px}
 .trend-chart-tooltip{font-size:12px;color:var(--muted);min-height:22px;text-align:center}
 @media(max-width:650px){.trend-chart-kpis{gap:8px}.trend-chart-kpis strong{font-size:13px}.trend-range button{padding:7px 8px}.trend-chart-head{align-items:flex-start}}
+
+.trend-windows{margin:10px 0;justify-content:flex-start}.trend-events-head{display:flex;align-items:center;justify-content:space-between;margin-top:16px}.trend-events-head h2{margin:0}.trend-event-list{margin-top:8px}.trend-event-list>div{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12px}.trend-event-list button{background:transparent;color:var(--accent);border:0;padding:4px;font-size:12px}
