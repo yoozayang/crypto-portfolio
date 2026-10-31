@@ -1,0 +1,23 @@
+name: Daily Portfolio Snapshot
+on:
+  schedule:
+    - cron: '10 16 * * *' # 00:10 Asia/Taipei (UTC+8)
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: daily-portfolio-snapshot
+  cancel-in-progress: false
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Calculate and store snapshot
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node tools/daily-snapshot.mjs
