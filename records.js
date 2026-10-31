@@ -1,6 +1,6 @@
 import {loadRemoteCollections,loadRemoteSettings,applyEventChanges,planEventChanges,eventKey,samePayload,clean} from './supabase-data.js';
 // Must equal version.json and the ?v= values in index.html; update all three with `node tools/stamp-build.mjs`.
-export const BUILD='20261031-100000';
+export const BUILD='20261031-110000';
 export const STORAGE_KEY='cryptoPortfolioV1';
 const JOURNAL_KEY='cryptoPortfolioPendingWrites',FLASH_KEY='cryptoPortfolioFlash',UNLOCK_KEY='cryptoPortfolioEditUnlocked';
 const clone=o=>JSON.parse(JSON.stringify(o));
