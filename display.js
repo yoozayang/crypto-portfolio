@@ -1,4 +1,4 @@
-import {renderTrends} from './trends.js';
+import {renderTrends,loadDailyHistory} from './trends.js';
 import {reconciledPortfolio,planMetrics,marketValue,hasKnownCost} from './calculations.js';
 import {saveState,commitChange,exportBackup,importBackup,resetState} from './records.js';
 import {watchlist,addToWatchlist,removeFromWatchlist,searchSymbols,fetchQuote} from './price-board.js';
@@ -96,4 +96,5 @@ export function mountApp({state,seed,labels,setState}){
   // Return to the tab a save came from (the ledger tab is restored by ledger-ui.js).
   const back=sessionStorage.getItem('cryptoPortfolioReturnTab');if(back&&back!=='ledger'&&document.getElementById(back)){sessionStorage.removeItem('cryptoPortfolioReturnTab');switchTab(back)}
   refreshPrices();
+  loadDailyHistory().then(()=>renderTrends(state)).catch(err=>console.warn('Daily history unavailable',err));
 }
