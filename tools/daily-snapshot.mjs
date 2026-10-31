@@ -4,7 +4,7 @@ const url=process.env.SUPABASE_URL||'https://uyxfppzinqnyofuwshye.supabase.co';
 const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
 if(!key)throw Error('Missing SUPABASE_SERVICE_ROLE_KEY GitHub Actions secret');
 const headers={apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
-async function rest(path,options={}){const r=await fetch(url+'/rest/v1/'+path,{...options,headers:{...headers,...options.headers}});if(!r.ok)throw Error(path+': '+r.status+' '+await r.text());return r.status===204?null:r.json();}
+async function rest(path,options={}){const r=await fetch(url+'/rest/v1/'+path,{...options,headers:{...headers,...options.headers}});if(!r.ok)throw Error(path+': '+r.status+' '+await r.text());const body=await r.text();if(!body.trim())return null;try{return JSON.parse(body)}catch(e){throw Error('Invalid JSON from '+path+': '+e.message)}}
 const [seed,baseline,rows,settings]=await Promise.all([
  readFile(new URL('../portfolio-data.json',import.meta.url),'utf8').then(JSON.parse),
  readFile(new URL('../baseline.json',import.meta.url),'utf8').then(JSON.parse),
@@ -37,8 +37,13 @@ for(const asset of assets){if(['STABLE','CASH','OTHER','USDT','USDC'].includes(a
    errors.push(new URL(endpoint).host+': invalid price');
   }catch(err){errors.push(new URL(endpoint).host+': '+err.message)}
  }
- if(!Number.isFinite(price)||price<=0)throw Error('Price lookup failed for '+asset+' ('+symbol+'): '+errors.join('; '));
- if(!Number.isFinite(price)||price<=0)throw Error('Invalid price for '+asset);
+ if(!Number.isFinite(price)||price<=0){
+  const cached=await rest('browser_price_quotes?select=price,captured_at,symbol&asset=eq.'+encodeURIComponent(asset)+'&order=captured_at.desc&limit=1');
+  const q=cached?.[0],age=q?Date.now()-Date.parse(q.captured_at):Infinity;
+  if(q?.symbol===symbol&&age>=0&&age<=30*60*1000&&Number(q.price)>0){price=Number(q.price);priceSources[asset]='browser_cache'}
+ }
+ if(!Number.isFinite(price)||price<=0)throw Error('Price lookup failed for '+asset+' ('+symbol+'): '+errors.join('; ')+'; no fresh browser cache');
+ priceSources[asset]??='binance_spot';
  state.prices[asset]=price;
 }
 const c=reconciledPortfolio(state);const assetsValue={};
