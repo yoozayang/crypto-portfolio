@@ -1,7 +1,7 @@
 // Compact navigation shell. Keep original panes and their event handlers intact.
 const groups=[
  {id:'dashboard',label:'總覽',icon:'▦',children:[['dashboard','持倉'],['prices','幣價']]},
- {id:'trends',label:'趨勢',icon:'▥',children:[['trends','資產']]},
+ {id:'trends',label:'趨勢',icon:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 3 8-9"/><path d="M3 21h18"/></svg>',children:[['trends','資產']]},
  {id:'transactions',label:'紀錄',icon:'⇄',children:[['transactions','交易'],['ledger','資金'],['strategy','策略']]},
  {id:'settings',label:'設定',icon:'⚙',children:[['settings','管理'],['plans','計畫'],['backup','備份']]}
 ];
