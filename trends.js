@@ -84,7 +84,7 @@ async function saveMilestone(old,title,date){
 function openMilestoneEditor(old){
  const title=prompt('大事件內容',old?.title||'');if(title===null||!title.trim())return;
  const date=prompt('事件日期（YYYY-MM-DD）',old?.date||new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Taipei'}));
- if(!date||!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||Number.isNaN(Date.parse(date))){alert('日期格式錯誤');return}
+ if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date))){alert('日期格式錯誤');return}
  saveMilestone(old,title.trim(),date).catch(e=>alert('儲存失敗：'+e.message));
 }
 async function deleteMilestone(id){
