@@ -18,6 +18,7 @@ delete holdings.CASH;
 const state={...seed,transactions,ledgerEntries,strategySettlements,capitalOpening:{第一倉:Number(baseline.accounting.firstCapital)},secondOpeningAssetBaseline:Number(baseline.accounting.secondOpeningAssetBaseline),snapshots:[{throughSeq:Math.max(0,...(seed.transactions||[]).map(x=>Number(x.id)||0)),holdings}],prices:{}};
 const assets=new Set([...Object.keys(holdings),...transactions.map(x=>x.asset),...ledgerEntries.map(x=>x.asset)]);
 const settingsMap=new Map(settings.map(x=>[x.code,x]));
+const priceSources={};
 for(const asset of assets){if(['STABLE','CASH','OTHER','USDT','USDC'].includes(asset))continue;
  const cfg=settingsMap.get(asset);if(!cfg||!cfg.price_enabled||cfg.price_source!=='binance_spot')throw Error('No supported price source for '+asset);
  const symbol=cfg.price_symbol||asset+'USDT';
@@ -49,7 +50,7 @@ const depositTotal=ledgerEntries.filter(e=>e.type==='deposit').reduce((s,e)=>s+N
 const withdrawalTotal=ledgerEntries.filter(e=>e.type==='withdraw').reduce((s,e)=>s+Number(e.amountU||0),0);
 const hour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Taipei',hour:'2-digit',hourCycle:'h23'}).format(new Date()));
 const slot=hour<8?1:hour<16?2:3;
-const row={snapshot_date:day,snapshot_slot:slot,captured_at:new Date().toISOString(),total_value:total,first_value:c.firstMarket,second_value:c.secondMarket,assets:assetsValue,prices:state.prices,deposit_total:depositTotal,withdrawal_total:withdrawalTotal,source:'github_actions'};
+const row={snapshot_date:day,snapshot_slot:slot,captured_at:new Date().toISOString(),total_value:total,first_value:c.firstMarket,second_value:c.secondMarket,assets:assetsValue,prices:{...state.prices,_sources:priceSources},deposit_total:depositTotal,withdrawal_total:withdrawalTotal,source:'github_actions'};
 await rest('portfolio_daily_snapshots?on_conflict=snapshot_date,snapshot_slot',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)});
 const check=await rest('portfolio_daily_snapshots?select=snapshot_date,total_value&snapshot_date=eq.'+day+'&snapshot_slot=eq.'+slot);
 if(check.length!==1||Math.abs(Number(check[0].total_value)-total)>0.01)throw Error('Snapshot verification failed');
