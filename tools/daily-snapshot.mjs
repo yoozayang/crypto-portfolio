@@ -21,9 +21,22 @@ const settingsMap=new Map(settings.map(x=>[x.code,x]));
 for(const asset of assets){if(['STABLE','CASH','OTHER','USDT','USDC'].includes(asset))continue;
  const cfg=settingsMap.get(asset);if(!cfg||!cfg.price_enabled||cfg.price_source!=='binance_spot')throw Error('No supported price source for '+asset);
  const symbol=cfg.price_symbol||asset+'USDT';
- const response=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+encodeURIComponent(symbol));
- if(!response.ok)throw Error('Price lookup failed for '+asset+' ('+symbol+'): '+response.status);
- const quote=await response.json();const price=Number(quote.price);
+ const endpoints=[
+  'https://api.binance.com/api/v3/ticker/price?symbol=',
+  'https://data-api.binance.vision/api/v3/ticker/price?symbol=',
+  'https://api.binance.us/api/v3/ticker/price?symbol='
+ ];
+ let price=NaN,errors=[];
+ for(const endpoint of endpoints){
+  try{
+   const response=await fetch(endpoint+encodeURIComponent(symbol),{signal:AbortSignal.timeout(8000)});
+   if(!response.ok){errors.push(new URL(endpoint).host+': HTTP '+response.status);continue}
+   const quote=await response.json();price=Number(quote.price);
+   if(Number.isFinite(price)&&price>0)break;
+   errors.push(new URL(endpoint).host+': invalid price');
+  }catch(err){errors.push(new URL(endpoint).host+': '+err.message)}
+ }
+ if(!Number.isFinite(price)||price<=0)throw Error('Price lookup failed for '+asset+' ('+symbol+'): '+errors.join('; '));
  if(!Number.isFinite(price)||price<=0)throw Error('Invalid price for '+asset);
  state.prices[asset]=price;
 }
