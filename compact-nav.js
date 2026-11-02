@@ -26,8 +26,13 @@ function navigate(id,{scroll=false}={}){
 function init(){
  const tabs=document.querySelector('#tabs');if(!tabs||document.querySelector('#compactNav'))return;
  const nav=document.createElement('nav');nav.id='compactNav';nav.className='compact-nav';nav.setAttribute('aria-label','主選單');
+ const priceIcon='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="11" r="6"/><path d="M10 7v8m2-6H9a2 2 0 0 0 0 4h2"/><path class="price-cycle" d="M16 5a8 8 0 0 1 4 8m0 0-2-2m2 2 2-2"/></svg>';
  nav.innerHTML=groups.map(g=>'<button type="button" data-group="'+g.id+'"><span class="nav-icon" aria-hidden="true">'+g.icon+'</span><span>'+g.label+'</span></button>').join('');
+ const title=document.querySelector('.top .title');const refresh=document.querySelector('#refreshPrices');
+ const brand=document.createElement('div');brand.className='compact-brand';brand.textContent='Crypto Portfolio';nav.prepend(brand);
+ if(refresh){refresh.classList.add('compact-price-button');refresh.innerHTML='<span class="nav-icon" aria-hidden="true">'+priceIcon+'</span><span class="price-label-desktop">更新幣價</span><span class="price-label-mobile">幣價</span>';const settings=nav.querySelector('[data-group="settings"]');nav.insertBefore(refresh,settings);}
  tabs.insertAdjacentElement('beforebegin',nav);
+ if(title)title.hidden=true;
  const sub=document.createElement('div');sub.id='compactSubnav';sub.className='compact-subnav';nav.insertAdjacentElement('afterend',sub);
  nav.querySelectorAll('button').forEach(b=>b.onclick=()=>navigate(groups.find(g=>g.id===b.dataset.group).children[0][0],{scroll:true}));
  // Existing save/reload behavior: preserve the return target.
