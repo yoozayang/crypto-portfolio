@@ -41,3 +41,16 @@
 @media(max-width:650px){.trend-chart-kpis{gap:8px}.trend-chart-kpis strong{font-size:13px}.trend-range button{padding:7px 8px}.trend-chart-head{align-items:flex-start}}
 
 .trend-windows{margin:10px 0;justify-content:flex-start}.trend-events-head{display:flex;align-items:center;justify-content:space-between;margin-top:16px}.trend-events-head h2{margin:0}.trend-event-list{margin-top:8px}.trend-event-list>div{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12px}.trend-event-list button{background:transparent;color:var(--accent);border:0;padding:4px;font-size:12px}
+
+/* Unified navigation / price refresh */
+.compact-nav{align-items:stretch;margin-top:8px}
+.compact-brand{flex:1.4;min-width:0;display:flex;align-items:center;font-size:15px;font-weight:800;white-space:nowrap;padding:0 9px}
+.compact-nav button{flex:1}
+.compact-nav .compact-price-button{margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-weight:700;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 8px;min-width:0;min-height:44px;cursor:pointer}
+.compact-nav .compact-price-button:disabled{opacity:.7;cursor:wait}
+.price-label-mobile{display:none}
+.price-loading .price-cycle{transform-origin:12px 12px;animation:price-spin 1s linear infinite}
+@keyframes price-spin{to{transform:rotate(360deg)}}
+.top:has(.title[hidden]){display:none}
+@media(max-width:650px){.compact-brand{display:none}.compact-nav{margin:0}.compact-nav .compact-price-button{flex:1;flex-direction:column;gap:3px;padding:7px 2px;border:0;border-radius:9px;background:transparent;font-size:11px;min-height:48px}.price-label-desktop{display:none}.price-label-mobile{display:inline}.compact-nav .compact-price-button .nav-icon{display:flex;align-items:center;justify-content:center;height:22px}}
+@media(prefers-reduced-motion:reduce){.price-loading .price-cycle{animation:none}}
