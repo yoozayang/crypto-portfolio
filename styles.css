@@ -54,3 +54,9 @@
 .top:has(.title[hidden]){display:none}
 @media(max-width:650px){.compact-brand{display:none}.compact-nav{margin:0}.compact-nav .compact-price-button{flex:1;flex-direction:column;gap:3px;padding:7px 2px;border:0;border-radius:9px;background:transparent;font-size:11px;min-height:48px}.price-label-desktop{display:none}.price-label-mobile{display:inline}.compact-nav .compact-price-button .nav-icon{display:flex;align-items:center;justify-content:center;height:22px}}
 @media(prefers-reduced-motion:reduce){.price-loading .price-cycle{animation:none}}
+
+/* Brand typography: match the visual weight of the primary navigation */
+@media(min-width:651px){
+ .compact-brand{flex:1.4;gap:0;padding:0 12px 0 8px;font-size:clamp(20px,1.55vw,27px);font-weight:850;letter-spacing:-.85px;line-height:1.08;color:var(--text);text-shadow:0 1px 0 rgba(255,255,255,.08)}
+ .compact-nav{align-items:stretch}
+}
