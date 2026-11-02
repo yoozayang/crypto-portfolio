@@ -17,7 +17,7 @@ function navigate(id,{scroll=false}={}){
  const sub=document.querySelector('#compactSubnav');
  sub.innerHTML=group.children.length===1?'':group.children.map(([key,label])=>'<button type="button" data-sub="'+key+'" class="'+(id===key?'active':'')+'">'+label+'</button>').join('');
  sub.querySelectorAll('button').forEach(b=>b.onclick=()=>navigate(b.dataset.sub));
- const refresh=document.querySelector('#refreshPrices');if(refresh){if(id==='dashboard'){sub.appendChild(refresh);refresh.classList.add('compact-price-refresh')}else document.querySelector('.top')?.appendChild(refresh);}
+
  const strategy=document.querySelector('#strategySettlementSection');
  const transactions=document.querySelector('#transactions');
  if(strategy&&transactions){if(id==='strategy'){transactions.querySelectorAll(':scope > :not(#strategySettlementSection)').forEach(x=>x.classList.add('compact-hidden'));strategy.classList.remove('compact-hidden')}else{transactions.querySelectorAll(':scope > :not(#strategySettlementSection)').forEach(x=>x.classList.remove('compact-hidden'));strategy.classList.add('compact-hidden')}}
