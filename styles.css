@@ -102,3 +102,11 @@
 .asset-spark-cta{align-self:flex-end;font-size:11px;color:#9cc2ff}
 .asset-spark-empty{color:var(--muted);font-size:12px}
 @media(max-width:650px){.dashboard-kpis>.asset-hero{min-height:205px;justify-content:flex-start;padding-bottom:122px}.asset-spark-link{left:22px;right:22px;top:auto;bottom:12px;width:auto;height:110px}.asset-spark-svg{height:55px}.asset-spark-caption{font-size:10px}.asset-spark-cta{font-size:10px}}
+
+/* Mobile: compact single KPI card; sparkline belongs to desktop only */
+@media(max-width:650px){
+ .dashboard-kpis>.asset-hero{grid-column:auto;grid-row:auto;min-height:0;padding:16px;justify-content:center;align-items:stretch;background:var(--panel);border-color:var(--line)}
+ .dashboard-kpis>.asset-hero .label{font-size:12px}
+ .dashboard-kpis>.asset-hero .value{font-size:18px;letter-spacing:normal;overflow-wrap:anywhere}
+ .dashboard-kpis>.asset-hero .asset-spark-link{display:none!important}
+}
