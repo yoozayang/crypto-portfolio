@@ -24,7 +24,8 @@ function updateWarehouseSummaries(){
     const market=positions.reduce((sum,p)=>sum+(p.marketValue??((+p.qty||0)*(+state.prices?.[p.asset]||0))),0);
     const firstCost=positions.reduce((sum,p)=>sum+(p.cost==null?0:(+p.cost||0)),0);
     const comparison=first?market-firstCost:market-(metrics.secondOpeningAssetBaseline+metrics.postBaselineNetFlow);
-    items[2].querySelector('.warehouse-metric-label').textContent=first?'持倉未實現損益':'相對基準變動';
+    items[2].querySelector('.warehouse-metric-label').textContent=first?'目前持倉損益':'資產增減';
+    items[2].title=first?'目前持有資產市值減去其已知買入成本':'第二倉目前市值減去期初資產基準及後續淨入金；非完整歷史投資報酬';
     items[0].querySelector('.warehouse-metric-label').textContent=basis[0];
     items[0].querySelector('.warehouse-metric-value').textContent=fmt(basis[1])+' U';
     items[1].querySelector('.warehouse-metric-value').textContent=fmt(market)+' U';
