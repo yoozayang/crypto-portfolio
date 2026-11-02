@@ -6,6 +6,7 @@ function bars(items,total){return '<div class="trend-stack">'+items.map((x,i)=>'
 function composition(items,total){return bars(items,total)+'<div class="trend-legend">'+items.map((x,i)=>'<div><i style="background:'+palette[i%palette.length]+'"></i><strong>'+esc(x.name)+'</strong><span>'+fmt(x.value/total*100,1)+'%</span><small>'+fmt(x.value)+' U</small></div>').join('')+'</div>'}
 function snapshotValue(s,prices){let total=0;for(const [a,p] of Object.entries(s.holdings||{})){if(a==='CASH'||a==='STABLE'||a==='OTHER')total+=Number(p?.value||0);else total+=Number(p?.qty||0)*Number(prices?.[a]||0)}return total}
 let dailyHistory=[];
+export const getDailyHistory=()=>dailyHistory.slice();
 export async function loadDailyHistory(){
  const r=await fetch('https://uyxfppzinqnyofuwshye.supabase.co/rest/v1/portfolio_daily_snapshots?select=snapshot_date,snapshot_slot,captured_at,total_value,deposit_total,withdrawal_total&order=captured_at.asc&limit=3000',{headers:{apikey:'sb_publishable_bx9oTbaaOgMrpRfqQ4fYKQ_3EU7JqKG'}});
  if(!r.ok)throw Error('讀取每日資產快照失敗：'+r.status);
