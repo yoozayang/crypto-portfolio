@@ -313,3 +313,33 @@ test('after saving a setting the page returns to the 設定 tab',async()=>{
   await page.waitForFunction(()=>!document.querySelector('#settings').classList.contains('hidden'));
   await context.close();
 });
+
+test('設定 add forms: blank names are refused, failed writes are reported, success reloads with a message',async()=>{
+  const {db,page,context,dialogs}=await open();
+  await page.click('#compactNav [data-group="settings"]');
+  await page.waitForSelector('#locationSettingForm');
+  const settingWrites=()=>db.log.filter(r=>r.method!=='GET'&&/\/(asset|location)_settings/.test(r.url)).length;
+  // Blank 代號 / 名稱: nothing is written (previously a blank location was saved under its generated id)
+  await page.click('#assetSettingForm button[type="submit"]');
+  await page.click('#locationSettingForm button[type="submit"]');
+  await page.$eval('#locationSettingForm [name="label"]',i=>{i.value='   '});
+  await page.$eval('#locationSettingForm',f=>f.requestSubmit());
+  assert.equal(settingWrites(),0);
+  assert.deepEqual(dialogs,['請輸入位置名稱']);
+  // A refused write is shown instead of being swallowed, and the button is usable again
+  db.hooks.before=req=>req.method==='POST'&&req.url.includes('asset_settings')?{status:403,body:'{"message":"denied"}'}:null;
+  await page.fill('#assetSettingForm [name="code"]','doge');
+  await page.click('#assetSettingForm button[type="submit"]');
+  await page.waitForFunction(()=>!document.querySelector('#assetSettingForm button[type="submit"]').disabled);
+  assert.match(dialogs.at(-1),/^儲存失敗：Supabase 403/);
+  // Success: saved, then reload back to 設定 with a confirmation
+  db.hooks.before=null;
+  await markPage(page);
+  await page.click('#assetSettingForm button[type="submit"]');
+  await reloaded(page);
+  const sent=db.log.filter(r=>r.method==='POST'&&r.url.includes('asset_settings')).at(-1).body;
+  assert.equal(sent.code,'DOGE');
+  await page.waitForFunction(()=>!document.querySelector('#settings').classList.contains('hidden'));
+  assert.match(await page.textContent('body'),/資產 DOGE 已儲存到雲端/);
+  await context.close();
+});
