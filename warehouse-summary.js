@@ -1,4 +1,7 @@
+import {STORAGE_KEY} from './records.js';
+import {ledgerMetrics} from './calculations.js';
 function updateWarehouseSummaries(){
+  const metrics=ledgerMetrics(JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'));
   document.querySelectorAll('#dashboard .fold-card').forEach(card=>{
     const title=card.querySelector('.fold-title h2')?.textContent?.trim();
     if(!['第一倉','第二倉'].includes(title)) return;
@@ -18,7 +21,8 @@ function updateWarehouseSummaries(){
     const cost=market-unrealized;
     const pct=cost?unrealized/cost*100:0;
     const fmt=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-    meta.textContent=`市值 ${fmt(market)} U · 未實現 ${unrealized>=0?'+':''}${fmt(unrealized)} U（${pct>=0?'+':''}${pct.toFixed(2)}%）`;
+    const basis=title==='第一倉'?`投入本金 ${fmt(metrics.firstCapital)} U`:`期初資產基準 ${fmt(metrics.secondOpeningAssetBaseline)} U`;
+    meta.textContent=`${basis} · 市值 ${fmt(market)} U · 未實現 ${unrealized>=0?'+':''}${fmt(unrealized)} U（${pct>=0?'+':''}${pct.toFixed(2)}%）`;
     meta.classList.toggle('good',unrealized>0);
     meta.classList.toggle('bad',unrealized<0);
   });
