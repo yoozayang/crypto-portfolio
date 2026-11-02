@@ -60,3 +60,13 @@
  .compact-brand{flex:1.4;gap:0;padding:0 12px 0 8px;font-size:clamp(20px,1.55vw,27px);font-weight:850;letter-spacing:-.85px;line-height:1.08;color:var(--text);text-shadow:0 1px 0 rgba(255,255,255,.08)}
  .compact-nav{align-items:stretch}
 }
+
+/* Align brand and refresh action to the same navigation baseline */
+@media(min-width:651px){
+ .compact-nav{align-items:stretch}
+ .compact-nav .compact-brand{align-self:stretch;display:flex;align-items:center;justify-content:flex-start;transform:translateY(-1px);font-size:24px;line-height:1.2;padding:0 8px}
+ .compact-nav button,.compact-nav #refreshPrices.compact-price-button{box-sizing:border-box;align-self:stretch;min-height:54px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;padding:11px 8px;font-size:inherit;line-height:1.2;vertical-align:middle}
+ .compact-nav #refreshPrices.compact-price-button{margin:0;flex:1;font-family:inherit;font-size:inherit;font-weight:700;white-space:nowrap}
+ .compact-nav #refreshPrices.compact-price-button .nav-icon{display:inline-flex;align-items:center;justify-content:center;line-height:1}
+ .compact-nav #refreshPrices.compact-price-button .nav-icon svg{display:block}
+}
