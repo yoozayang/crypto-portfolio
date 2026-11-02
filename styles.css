@@ -70,3 +70,21 @@
  .compact-nav #refreshPrices.compact-price-button .nav-icon{display:inline-flex;align-items:center;justify-content:center;line-height:1}
  .compact-nav #refreshPrices.compact-price-button .nav-icon svg{display:block}
 }
+
+/* Dashboard hierarchy and warehouse summaries */
+.dashboard-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dashboard-kpis>.kpi:first-child{grid-column:span 2;grid-row:span 2;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(145deg,#192b4b,var(--panel));border-color:#365782;padding:24px}
+.dashboard-kpis>.kpi:first-child .label{font-size:14px}
+.dashboard-kpis>.kpi:first-child .value{font-size:clamp(29px,3.1vw,40px);letter-spacing:-.04em;overflow-wrap:anywhere}
+.dashboard-kpis>.kpi:not(:first-child) .value{font-size:clamp(17px,1.6vw,22px);overflow-wrap:anywhere}
+.warehouse-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.warehouse-metric{min-width:0;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.warehouse-metric-label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
+.warehouse-metric-value{display:block;font-size:clamp(12px,1.2vw,16px);font-weight:750;overflow-wrap:anywhere}
+.fold-title{flex-wrap:wrap}
+.fold-meta:empty{display:none}
+.all-holdings>.fold-body{padding-top:2px}
+.compact-nav .nav-icon{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px}
+.compact-nav .nav-icon svg{display:block;width:22px;height:22px}
+@media(max-width:850px){.dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-kpis>.kpi:first-child{grid-column:span 2;grid-row:auto;min-height:116px}.warehouse-metrics{grid-template-columns:1fr}.warehouse-metric{padding:8px 10px}}
+@media(max-width:650px){.dashboard-kpis>.kpi:first-child .value{font-size:32px}.dashboard-kpis>.kpi:not(:first-child) .value{font-size:18px}.warehouse-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.warehouse-metric:first-child{grid-column:span 2}}
