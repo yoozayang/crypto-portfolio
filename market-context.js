@@ -29,12 +29,23 @@ async function realizedCost(code){
  if(!['BTC','ETH'].includes(code))return null;
  const key='realized:'+code,old=cache.get(key);
  if(old&&Date.now()-old.at<24*60*60*1000)return old.value;
- const url='https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets='+code.toLowerCase()+'&metrics=CapRealUSD,SplyCur&frequency=1d&limit_per_asset=1';
- const j=await fetchJSON(url);
- const row=j.data?.[0],cap=Number(row?.CapRealUSD),supply=Number(row?.SplyCur);
- if(!Number.isFinite(cap)||!Number.isFinite(supply)||cap<=0||supply<=0)throw Error('no realized cost data');
- const value={price:cap/supply,date:row.time?.slice(0,10)};
- cache.set(key,{at:Date.now(),value});return value;
+ const base='https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets='+code.toLowerCase()+'&frequency=1d&limit_per_asset=1&metrics=';
+ const options=[
+  {metrics:'PriceRealUSD',read:r=>Number(r.PriceRealUSD)},
+  {metrics:'CapRealUSD,SplyCur',read:r=>Number(r.CapRealUSD)/Number(r.SplyCur)},
+  {metrics:'PriceUSD,CapMVRVCur',read:r=>Number(r.PriceUSD)/Number(r.CapMVRVCur)}
+ ];
+ for(const option of options){
+  try{
+   const j=await fetchJSON(base+encodeURIComponent(option.metrics));
+   const row=j.data?.[0],price=row?option.read(row):NaN;
+   if(Number.isFinite(price)&&price>0){
+    const value={price,date:row.time?.slice(0,10),method:option.metrics};
+    cache.set(key,{at:Date.now(),value});return value;
+   }
+  }catch(err){console.info('Realized price source unavailable',code,option.metrics,err.message)}
+ }
+ return null;
 }
 function realizedHTML(v,code){
  if(!['BTC','ETH'].includes(code))return '';
