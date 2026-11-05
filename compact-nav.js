@@ -32,7 +32,7 @@ function init(){
  nav.innerHTML=groups.map(g=>'<button type="button" data-group="'+g.id+'"><span class="nav-icon" aria-hidden="true">'+g.icon+'</span><span>'+g.label+'</span></button>').join('');
  const title=document.querySelector('.top .title');const refresh=document.querySelector('#refreshPrices');
  const brand=document.createElement('div');brand.className='compact-brand';brand.textContent='Crypto Portfolio';nav.prepend(brand);
- if(refresh){refresh.classList.add('compact-price-button');refresh.innerHTML='<span class="nav-icon" aria-hidden="true">'+priceIcon+'</span><span class="price-label-desktop">更新幣價</span><span class="price-label-mobile">幣價</span>';const settings=nav.querySelector('[data-group="settings"]');refresh.remove();}
+ if(refresh){refresh.classList.add('compact-price-button');refresh.innerHTML='<span class="nav-icon" aria-hidden="true">'+priceIcon+'</span><span class="price-label-desktop">更新幣價</span><span class="price-label-mobile">幣價</span>';const settings=nav.querySelector('[data-group="settings"]');nav.insertBefore(refresh,settings);}
  tabs.insertAdjacentElement('beforebegin',nav);
  if(title)title.hidden=true;
  const sub=document.createElement('div');sub.id='compactSubnav';sub.className='compact-subnav';nav.insertAdjacentElement('afterend',sub);
