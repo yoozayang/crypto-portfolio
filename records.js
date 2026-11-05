@@ -1,6 +1,6 @@
 import {loadRemoteCollections,loadRemoteSettings,applyEventChanges,planEventChanges,eventKey,samePayload,clean} from './supabase-data.js';
 // Must equal version.json and the ?v= values in index.html; update all three with `node tools/stamp-build.mjs`.
-export const BUILD='20261102-142005';
+export const BUILD='20261105-154314';
 export const STORAGE_KEY='cryptoPortfolioV1';
 const JOURNAL_KEY='cryptoPortfolioPendingWrites',FLASH_KEY='cryptoPortfolioFlash',UNLOCK_KEY='cryptoPortfolioEditUnlocked';
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -23,6 +23,7 @@ export async function loadSeed(){
     loadRemoteCollections(),
     loadRemoteSettings()
   ]);
+  const initialTxMax=Math.max(0,...(data.transactions||[]).map(x=>+x.id||0));
   data.transactions=remote.transactions;data.strategySettlements=remote.strategySettlements;data.ledgerEntries=remote.ledgerEntries;
   data.assetSettings=settings.assets?.length?settings.assets:fallbackAssets(data);
   data.locationSettings=settings.locations?.length?settings.locations:fallbackLocations(flow);
@@ -34,14 +35,14 @@ export async function loadSeed(){
   data.reconciliation.actualHoldings.STABLE={value:+baseline.holdings?.stable?.value||0,note:baseline.holdings?.stable?.note,label:baseline.holdings?.stable?.label};
   data.reconciliation.actualHoldings.OTHER={value:+baseline.holdings?.other?.value||0,note:baseline.holdings?.other?.note,label:baseline.holdings?.other?.label};
   data.reconciliation.referenceTotal=+baseline.snapshot?.referenceTotal||data.reconciliation.totalValue||0;data.reconciliation.baselineNote=baseline.notes?.snapshot||'';
-  const initialTxMax=Math.max(0,...(data.transactions||[]).map(x=>+x.id||0));for(const t of data.transactions||[])if(!t.seq)t.seq=+t.id||0;
+  for(const t of data.transactions||[])if(!t.seq)t.seq=+t.id||0;
   data.snapshots=data.snapshots||[{id:1,date:String(baseline.asOf||'2026-09-07').slice(0,10),asOf:baseline.asOf,label:baseline.snapshot?.label||'2026/09/07 初始對帳',holdings:clone(data.reconciliation.actualHoldings),throughTransactionId:initialTxMax,throughLedgerId:0,throughSeq:initialTxMax,note:baseline.notes?.snapshot||''}];
   data.capitalOpening={第一倉:+baseline.accounting?.firstCapital||0};data.secondOpeningAssetBaseline=+baseline.accounting?.secondOpeningAssetBaseline||0;data.accountingNotes=clone(baseline.notes||{});data.nextEventSeq=Math.max(initialTxMax,maxSeq(data))+1;
   return {data,labels};
 }
 function migrate(state,seed){
   state.assets=clone(seed.assets);state.exchanges=clone(seed.exchanges);state.assetSettings=clone(seed.assetSettings||[]);state.locationSettings=clone(seed.locationSettings||[]);
-  state.plans=state.plans||clone(seed.plans);state.reconciliation=state.reconciliation||clone(seed.reconciliation);state.prices={...seed.prices,...(state.prices||{})};state.priceMeta=state.priceMeta||{};state.priceChanges24h=state.priceChanges24h||{};state.snapshots=state.snapshots?.length?state.snapshots:clone(seed.snapshots);state.capitalOpening={第一倉:+seed.capitalOpening?.第一倉||0};state.secondOpeningAssetBaseline=+seed.secondOpeningAssetBaseline||0;state.accountingNotes=clone(seed.accountingNotes||{});
+  state.plans=state.plans||clone(seed.plans);state.reconciliation=state.reconciliation||clone(seed.reconciliation);state.prices={...seed.prices,...(state.prices||{})};state.priceMeta=state.priceMeta||{};state.priceChanges24h=state.priceChanges24h||{};state.snapshots=state.snapshots?.length?state.snapshots:clone(seed.snapshots);if(state.snapshots?.length===1&&state.snapshots[0]?.id===1&&seed.snapshots?.[0]?.throughSeq){state.snapshots[0].throughSeq=seed.snapshots[0].throughSeq;state.snapshots[0].throughTransactionId=seed.snapshots[0].throughTransactionId;}state.capitalOpening={第一倉:+seed.capitalOpening?.第一倉||0};state.secondOpeningAssetBaseline=+seed.secondOpeningAssetBaseline||0;state.accountingNotes=clone(seed.accountingNotes||{});
   state.transactions=clone(seed.transactions||[]);state.strategySettlements=clone(seed.strategySettlements||[]);state.ledgerEntries=clone(seed.ledgerEntries||[]);for(const t of state.transactions)if(!t.seq)t.seq=+t.id||0;normalizeSeq(state);state.dataVersion=14;return state;
 }
 export function loadState(seed){let existing=null;try{existing=JSON.parse(localStorage.getItem(STORAGE_KEY));}catch{}const state=migrate(existing||clone(seed),seed);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));markReady(state);return state;}
