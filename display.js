@@ -49,7 +49,7 @@ export function mountApp({state,seed,labels,setState}){
   function fold(name,ps){
     const market=ps.reduce((sum,p)=>sum+marketValue(p,state.prices),0);
     const principal=name==='第一倉'?capitalMetrics(state,'第一倉').net:null;
-    const summary=name==='第一倉'?'投入 '+fmt(principal)+' U · 現值 '+fmt(market)+' U':'現值 '+fmt(market)+' U';
+    const pnl=principal===null?null:market-principal,pct=principal>0?pnl/principal*100:null;const summary=name==='第一倉'?'投入 '+fmt(principal)+' U · 現值 '+fmt(market)+' U · 損益 '+(pnl>=0?'+':'')+fmt(pnl)+' U'+(pct===null?'':' ('+(pct>=0?'+':'')+fmt(pct,2)+'%)'):'現值 '+fmt(market)+' U';
     return `<details class="fold-card" open><summary><span class="fold-title"><h2>${name}</h2><span class="fold-meta">${summary} · <span data-warehouse-twd="${market}">台幣換算中…</span></span></span></summary><div class="fold-body">${holdingCards(ps)}</div></details>`;
   }
   function kpi(label,value,num){const help={'投入／比較基準':'第一倉使用持倉成本，第二倉使用期初資產基準加後續淨入金','資產增減':'目前總資產減去投入／比較基準；不等於完整歷史投資報酬','累計損益（估算）':'資產增減加上已實現損益，僅供個人追蹤參考'};return `<div class="card kpi" ${help[label]?'title="'+help[label]+'"':''}><div class="label">${label}</div><div class="value ${num>0?'good':num<0?'bad':''}">${value}</div></div>`}
