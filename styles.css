@@ -127,3 +127,5 @@
 .dashboard-allocation-warehouse .dashboard-allocation-legend>span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;line-height:1.5;font-size:13px}
 .dashboard-allocation-warehouse .dashboard-allocation-legend strong{margin-left:2px}
 @media(max-width:650px){.dashboard-allocation{margin-top:12px}.dashboard-allocation-warehouses{grid-template-columns:1fr;gap:12px}.dashboard-allocation-warehouse.card{padding:15px 16px}.dashboard-allocation-warehouse .dashboard-allocation-heading{font-size:16px;margin-bottom:11px}.dashboard-allocation-warehouse .dashboard-allocation-legend{gap:8px 14px}.dashboard-allocation-warehouse .dashboard-allocation-legend>span{font-size:12px}}
+
+.price-day-range{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:9px;margin-top:10px;font-size:11px;color:var(--muted)}.price-day-range b{display:block;color:var(--text);margin-top:3px}.price-box .price-value{font-size:clamp(20px,2vw,27px);font-weight:800;margin:10px 0;overflow-wrap:anywhere}@media(max-width:650px){.price-day-range{font-size:10px;gap:5px}.price-box .price-value{font-size:19px}}
