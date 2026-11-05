@@ -49,12 +49,10 @@ function updateWarehouseSummaries(){
     const secondBase=metrics.secondOpeningAssetBaseline+metrics.postBaselineNetFlow;
     const secondChange=market-secondBase;
     const html=first?
-      metric('投入本金',fmt(principal)+' U',money(principalTwd))+
-      metric('目前市值',fmt(market)+' U',money(currentTwd))+
-      metric('整倉損益',(pnl>=0?'+':'')+fmt(pnl)+' U ('+(pct>=0?'+':'')+fmt(pct)+'%)',null,pnl>=0?'good':'bad'):
+      metric('投入本金',fmt(principal)+' U',null)+
+      metric('目前市值',fmt(market)+' U',money(currentTwd)):
       metric('期初資產基準',fmt(metrics.secondOpeningAssetBaseline)+' U',null)+
-      metric('目前市值',fmt(market)+' U',money(currentTwd))+
-      metric('資產增減',(secondChange>=0?'+':'')+fmt(secondChange)+' U',null,secondChange>=0?'good':'bad');
+      metric('目前市值',fmt(market)+' U',money(currentTwd));
     let box=card.querySelector('.warehouse-metrics');
     if(!box){box=document.createElement('div');box.className='warehouse-metrics';card.querySelector('.fold-body')?.prepend(box)}
     if(box&&box.innerHTML!==html)box.innerHTML=html;
