@@ -177,3 +177,5 @@
 #prices .heatmap-credit{text-align:right;font-size:11px;padding-top:5px}
 #prices .heatmap-credit a{color:var(--muted)}
 @media(max-width:650px){#prices .heatmap-toggle{padding:15px;font-size:15px}#prices .heatmap-toggle small{display:block;margin:3px 0 0;font-size:11px}#prices .heatmap-body{padding:0 8px 10px}#prices .tradingview-widget-container{height:440px}}
+
+#prices details.heatmap-card>summary{list-style:none}#prices details.heatmap-card>summary::-webkit-details-marker{display:none}#prices details.heatmap-card[open] .heatmap-chevron{transform:rotate(180deg)}
