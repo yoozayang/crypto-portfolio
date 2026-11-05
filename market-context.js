@@ -24,6 +24,43 @@ async function news(code){
  const value=rows.filter(x=>x.title&&(x.link||x.url)).slice(0,4);
  cache.set(key,{at:Date.now(),value});return value;
 }
+// Realized price is an on-chain supply-weighted cost proxy, not a survey of holders.
+async function realizedCost(code){
+ if(!['BTC','ETH'].includes(code))return null;
+ const key='realized:'+code,old=cache.get(key);
+ if(old&&Date.now()-old.at<24*60*60*1000)return old.value;
+ const url='https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets='+code.toLowerCase()+'&metrics=CapRealUSD,SplyCur&frequency=1d&limit_per_asset=1';
+ const j=await fetchJSON(url);
+ const row=j.data?.[0],cap=Number(row?.CapRealUSD),supply=Number(row?.SplyCur);
+ if(!Number.isFinite(cap)||!Number.isFinite(supply)||cap<=0||supply<=0)throw Error('no realized cost data');
+ const value={price:cap/supply,date:row.time?.slice(0,10)};
+ cache.set(key,{at:Date.now(),value});return value;
+}
+function realizedHTML(v,code){
+ if(!['BTC','ETH'].includes(code))return '';
+ if(!v)return '<div class="market-realized"><span>平均持有者成本（鏈上估算）</span><strong>暫無免費資料</strong></div>';
+ return '<div class="market-realized"><span>平均持有者成本（鏈上估算）</span><strong>
+ if(v.error)return '<p class="subtle">'+safe(v.error)+'</p>';
+ const c=v.coin;
+ return '<div class="market-context-stats"><div>市值排名<strong>'+(c?.market_cap_rank?'#'+c.market_cap_rank:'暫無資料')+'</strong></div><div>7日漲跌<strong class="'+(c?.price_change_percentage_7d_in_currency>=0?'good':'bad')+'">'+pct(c?.price_change_percentage_7d_in_currency)+'</strong></div><div>市場熱度<strong>'+(v.trendingRank?'熱門搜尋 #'+v.trendingRank:v.trendingError?'暫無資料':'未進熱門榜')+'</strong></div></div>'+(v.marketError?'<p class="subtle">市場資料暫時無法取得，稍後重試</p>':'')+'<div class="market-context-source">市值／7日：CoinGecko；熱度：CoinGecko熱門搜尋排名（非買賣情緒）</div>';
+}
+function newsHTML(rows){return rows.length?'<div class="market-context-news">'+rows.map(x=>{const url=x.link||x.url;let valid=false;try{valid=new URL(url).protocol==='https:'}catch{}return valid?'<a href="'+safe(url)+'" target="_blank" rel="noopener noreferrer">'+safe(x.title)+'</a>':''}).join('')+'</div>':'<p class="subtle">目前沒有找到相關新聞</p>'}
+async function expand(card){
+ const code=card.querySelector('[data-market-coin]')?.dataset.marketCoin;if(!code)return;
+ let panel=card.querySelector('.market-context');
+ if(panel){panel.remove();card.classList.remove('market-expanded');card.setAttribute('aria-expanded','false');return}
+ panel=document.createElement('div');panel.className='market-context';panel.innerHTML='<div class="subtle">正在取得市場資訊與新聞…</div>';
+ card.append(panel);card.classList.add('market-expanded');card.setAttribute('aria-expanded','true');
+ const [m,n,r]=await Promise.allSettled([market(code),news(code),realizedCost(code)]);
+ if(!panel.isConnected)return;
+ panel.innerHTML='<h4>市場概況</h4>'+(m.status==='fulfilled'?marketHTML(m.value):'<p class="subtle">市場資訊暫時無法取得</p>')+(r.status==='fulfilled'?realizedHTML(r.value,code):realizedHTML(null,code))+'<h4>相關新聞／事件</h4>'+(n.status==='fulfilled'?newsHTML(n.value):'<p class="subtle">新聞來源暫時無法取得</p>')+'<div class="market-context-source">新聞為第三方來源，點擊標題閱讀原文</div>';
+}
+document.addEventListener('click',e=>{
+ const card=e.target.closest('#prices .price-box');if(!card||e.target.closest('button,a,input'))return;expand(card);
+});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const card=e.target.closest('#prices .price-box');if(card&&e.target===card){e.preventDefault();expand(card)}});
++v.price.toLocaleString('en-US',{maximumFractionDigits:2})+'</strong></div><div class="market-context-source">Realized Price＝已實現市值 ÷ 供應量 · Coin Metrics'+(v.date?' · '+safe(v.date):'')+'；不等於每位投資人的實際買入均價</div>';
+}
 function marketHTML(v){
  if(v.error)return '<p class="subtle">'+safe(v.error)+'</p>';
  const c=v.coin;
