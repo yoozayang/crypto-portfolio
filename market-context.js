@@ -24,33 +24,31 @@ async function news(code){
  const value=rows.filter(x=>x.title&&(x.link||x.url)).slice(0,4);
  cache.set(key,{at:Date.now(),value});return value;
 }
-// Realized price is an on-chain supply-weighted cost proxy, not a survey of holders.
+// BTC short-term holder realized price: on-chain cost basis for coins moved within ~155 days.
 async function realizedCost(code){
- if(!['BTC','ETH'].includes(code))return null;
- const key='realized:'+code,old=cache.get(key);
+ if(code!=='BTC')return null;
+ const key='sth-realized:BTC',old=cache.get(key);
  if(old&&Date.now()-old.at<24*60*60*1000)return old.value;
- const base='https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets='+code.toLowerCase()+'&frequency=1d&limit_per_asset=1&metrics=';
- const options=[
-  {metrics:'PriceRealUSD',read:r=>Number(r.PriceRealUSD)},
-  {metrics:'CapRealUSD,SplyCur',read:r=>Number(r.CapRealUSD)/Number(r.SplyCur)},
-  {metrics:'PriceUSD,CapMVRVCur',read:r=>Number(r.PriceUSD)/Number(r.CapMVRVCur)}
- ];
- for(const option of options){
+ const urls=['https://api.bitcoin-data.com/v1/sth-realized-price/last','https://api.bitcoin-data.com/v1/realized-price-sth/last'];
+ for(const url of urls){
   try{
-   const j=await fetchJSON(base+encodeURIComponent(option.metrics));
-   const row=j.data?.[0],price=row?option.read(row):NaN;
+   const j=await fetchJSON(url);
+   const row=Array.isArray(j)?j.at(-1):(Array.isArray(j.data)?j.data.at(-1):j.data||j);
+   const price=Number(typeof row==='number'?row:row?.value??row?.price??row?.sth_realized_price??row?.realized_price_sth??row?.sthRealizedPrice);
+   const date=row?.date||row?.time||row?.timestamp||j?.date;
    if(Number.isFinite(price)&&price>0){
-    const value={price,date:row.time?.slice(0,10),method:option.metrics};
+    const value={price,date:date?String(date).slice(0,10):null};
     cache.set(key,{at:Date.now(),value});return value;
    }
-  }catch(err){console.info('Realized price source unavailable',code,option.metrics,err.message)}
+  }catch(err){console.info('STH realized price source unavailable',err.message)}
  }
- return null;
+ cache.set(key,{at:Date.now(),value:null});return null;
 }
 function realizedHTML(v,code){
- if(!['BTC','ETH'].includes(code))return '';
- if(!v)return '<div class="market-realized"><span>平均持有者成本（鏈上估算）</span><strong>暫無免費資料</strong></div>';
- return '<div class="market-realized"><span>平均持有者成本（鏈上估算）</span><strong>$'+v.price.toLocaleString('en-US',{maximumFractionDigits:2})+'</strong></div><div class="market-context-source">Realized Price＝已實現市值 ÷ 供應量 · Coin Metrics'+(v.date?' · '+safe(v.date):'')+'；不等於每位投資人的實際買入均價</div>';
+ if(code!=='BTC')return '';
+ const link='<a href="https://www.coinglass.com/pro/onchain/bitcoin-short-term-holder-realized-price" target="_blank" rel="noopener noreferrer">查看STH成本線</a>';
+ if(!v)return '<div class="market-realized"><span>短期持有者成本（STH，約155天）</span><strong>暫無資料</strong></div><div class="market-context-source">無法取得即時鏈上數據 · '+link+'</div>';
+ return '<div class="market-realized"><span>短期持有者成本（STH，約155天）</span><strong>$'+v.price.toLocaleString('en-US',{maximumFractionDigits:2})+'</strong></div><div class="market-context-source">來源：Bitcoin Data'+(v.date?' · '+safe(v.date):'')+' · '+link+'</div>';
 }
 function marketHTML(v){
  if(v.error)return '<p class="subtle">'+safe(v.error)+'</p>';
