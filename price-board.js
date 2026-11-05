@@ -39,5 +39,5 @@ export async function fetchQuote(symbol){
   const r=await fetch(`${BINANCE}/ticker/24hr?symbol=${encodeURIComponent(symbol)}`);
   if(!r.ok)throw new Error(`Binance ${r.status}`);
   const j=await r.json();
-  return {price:+j.lastPrice||0,change:Number.isFinite(+j.priceChangePercent)?+j.priceChangePercent:null,high:+j.highPrice||null,low:+j.lowPrice||null};
+  return {price:+j.lastPrice||0,change:Number.isFinite(+j.priceChangePercent)?+j.priceChangePercent:null,high:+j.highPrice||null,low:+j.lowPrice||null,volume:+j.quoteVolume||null};
 }
