@@ -179,3 +179,5 @@
 @media(max-width:650px){#prices .heatmap-toggle{padding:15px;font-size:15px}#prices .heatmap-toggle small{display:block;margin:3px 0 0;font-size:11px}#prices .heatmap-body{padding:0 8px 10px}#prices .tradingview-widget-container{height:440px}}
 
 #prices details.heatmap-card>summary{list-style:none}#prices details.heatmap-card>summary::-webkit-details-marker{display:none}#prices details.heatmap-card[open] .heatmap-chevron{transform:rotate(180deg)}
+
+@media(min-width:768px) and (hover:hover) and (pointer:fine){#prices .price-grid .price-box[draggable=true]{cursor:grab}#prices .price-grid .price-box.price-dragging{opacity:.4;cursor:grabbing}#prices .price-grid .price-box.price-drop-target{outline:2px dashed var(--text);outline-offset:2px}}
