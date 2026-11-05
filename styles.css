@@ -181,3 +181,6 @@
 #prices details.heatmap-card>summary{list-style:none}#prices details.heatmap-card>summary::-webkit-details-marker{display:none}#prices details.heatmap-card[open] .heatmap-chevron{transform:rotate(180deg)}
 
 @media(min-width:768px) and (hover:hover) and (pointer:fine){#prices .price-grid .price-box[draggable=true]{cursor:grab}#prices .price-grid .price-box.price-dragging{opacity:.4;cursor:grabbing}#prices .price-grid .price-box.price-drop-target{outline:2px dashed var(--text);outline-offset:2px}}
+
+/* Warehouse summary: equal full-width cards on narrow screens */
+@media(max-width:650px){#dashboard .warehouse-metrics{display:grid;grid-template-columns:minmax(0,1fr)}#dashboard .warehouse-metrics>.warehouse-metric{grid-column:1 / -1;width:auto;min-width:0}}
