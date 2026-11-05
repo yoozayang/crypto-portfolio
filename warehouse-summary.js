@@ -1,52 +1,69 @@
 import {STORAGE_KEY} from './records.js';
-import {ledgerMetrics,reconciledPortfolio} from './calculations.js';
-function updateWarehouseSummaries(){
-  const state=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
-  const metrics=ledgerMetrics(state);
-  const portfolio=reconciledPortfolio(state);
-  document.querySelectorAll('#dashboard .fold-card').forEach(card=>{
-    const title=card.querySelector('.fold-title h2')?.textContent?.trim();
-    if(!['第一倉','第二倉'].includes(title)) return;
-    const meta=card.querySelector('.fold-meta');
-    if(!meta) return;
-    const fmt=n=>Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-    const basis=title==='第一倉'?['投入本金',metrics.firstCapital]:['期初資產基準',metrics.secondOpeningAssetBaseline];
-    if(!card.querySelector('.warehouse-metrics')){
-      const box=document.createElement('div');box.className='warehouse-metrics';
-      box.innerHTML='<div class="warehouse-metric"><span class="warehouse-metric-label"></span><strong class="warehouse-metric-value"></strong></div><div class="warehouse-metric"><span class="warehouse-metric-label">目前市值</span><strong class="warehouse-metric-value"></strong></div><div class="warehouse-metric"><span class="warehouse-metric-label">可計算未實現損益</span><strong class="warehouse-metric-value"></strong></div>';
-      card.querySelector('.fold-body')?.prepend(box);
-    }
-    const box=card.querySelector('.warehouse-metrics');
-    const items=box?.querySelectorAll('.warehouse-metric');
-    if(!items||items.length!==3)return;
-    const first=title==='第一倉';
-    const positions=portfolio.warehouses?.[title]||[];
-    const market=positions.reduce((sum,p)=>sum+(p.marketValue??((+p.qty||0)*(+state.prices?.[p.asset]||0))),0);
-    const firstCost=positions.reduce((sum,p)=>sum+(p.cost==null?0:(+p.cost||0)),0);
-    const comparison=first?market-firstCost:market-(metrics.secondOpeningAssetBaseline+metrics.postBaselineNetFlow);
-    items[2].querySelector('.warehouse-metric-label').textContent=first?'目前持倉損益':'資產增減';
-    items[2].title=first?'目前持有資產市值減去其已知買入成本':'第二倉目前市值減去期初資產基準及後續淨入金；非完整歷史投資報酬';
-    items[0].querySelector('.warehouse-metric-label').textContent=basis[0];
-    items[0].querySelector('.warehouse-metric-value').textContent=fmt(basis[1])+' U';
-    items[1].querySelector('.warehouse-metric-value').textContent=fmt(market)+' U';
-    const pnl=items[2].querySelector('.warehouse-metric-value');
-    pnl.textContent=(comparison>=0?'+':'')+fmt(comparison)+' U';
-    pnl.classList.toggle('good',comparison>0);
-    pnl.classList.toggle('bad',comparison<0);
-    meta.textContent='';
+import {ledgerMetrics,reconciledPortfolio,marketValue} from './calculations.js';
 
+const fmt=(n,d=2)=>Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+let currentFx=null,loadingFx=false;
+async function loadFx(){
+  if(currentFx||loadingFx)return;
+  loadingFx=true;
+  try{
+    const response=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=TWD');
+    if(!response.ok)throw Error('FX '+response.status);
+    const data=await response.json(),rate=Number(data.rates?.TWD);
+    if(Number.isFinite(rate)&&rate>0)currentFx=rate;
+  }catch(e){console.warn('Warehouse TWD exchange rate unavailable',e)}
+  finally{loadingFx=false;updateWarehouseSummaries()}
+}
+function metric(label,value,twdText,extraClass=''){
+  return `<div class="warehouse-metric"><span class="warehouse-metric-label">${label}</span><strong class="warehouse-metric-value ${extraClass}">${value}</strong>${twdText?`<small class="subtle" style="display:block;font-size:11px;margin-top:4px">${twdText}</small>`:''}</div>`;
+}
+function updateWarehouseSummaries(){
+  const dashboard=document.querySelector('#dashboard');
+  if(!dashboard)return;
+  const state=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
+  const metrics=ledgerMetrics(state),portfolio=reconciledPortfolio(state);
+  dashboard.querySelectorAll('.fold-card').forEach(card=>{
+    const title=card.querySelector('.fold-title h2')?.textContent?.trim();
+    if(title!=='第一倉'&&title!=='第二倉')return;
+    const first=title==='第一倉',positions=portfolio.warehouses?.[title]||[];
+    const market=positions.reduce((sum,p)=>sum+marketValue(p,state.prices),0);
+    const principal=metrics.firstCapital;
+    const opening=metrics.byWarehouse?.第一倉?.opening||31664;
+    const originalFx=Number(state.fxTwdPerUsd)||31.582;
+    const principalTwd=first?(currentFx?opening*originalFx+(principal-opening)*currentFx:Math.abs(principal-opening)<0.001?opening*originalFx:null):null;
+    const currentTwd=currentFx?market*currentFx:null;
+    const money=v=>v==null?'台幣換算中…':'約 NT$'+fmt(v,0);
+    const pnl=market-principal,pct=principal>0?pnl/principal*100:0;
+    const secondBase=metrics.secondOpeningAssetBaseline+metrics.postBaselineNetFlow;
+    const secondChange=market-secondBase;
+    const html=first?
+      metric('投入本金',fmt(principal)+' U',money(principalTwd))+
+      metric('目前市值',fmt(market)+' U',money(currentTwd))+
+      metric('整倉損益',(pnl>=0?'+':'')+fmt(pnl)+' U ('+(pct>=0?'+':'')+fmt(pct)+'%)',null,pnl>=0?'good':'bad'):
+      metric('期初資產基準',fmt(metrics.secondOpeningAssetBaseline)+' U',null)+
+      metric('目前市值',fmt(market)+' U',money(currentTwd))+
+      metric('資產增減',(secondChange>=0?'+':'')+fmt(secondChange)+' U',null,secondChange>=0?'good':'bad');
+    let box=card.querySelector('.warehouse-metrics');
+    if(!box){box=document.createElement('div');box.className='warehouse-metrics';card.querySelector('.fold-body')?.prepend(box)}
+    if(box&&box.innerHTML!==html)box.innerHTML=html;
+    const meta=card.querySelector('.fold-meta');
+    if(meta&&meta.textContent!=='')meta.textContent='';
   });
+  if(!currentFx)void loadFx();
 }
 let scheduled=false;
-const observer=new MutationObserver(()=>{
-  if(scheduled)return;
-  scheduled=true;
-  requestAnimationFrame(()=>{
-    observer.disconnect();
-    updateWarehouseSummaries();
-    observer.observe(document.querySelector('#dashboard'),{childList:true,subtree:true});
-    scheduled=false;
-  });
-});
 const dashboard=document.querySelector('#dashboard');
-if(dashboard){observer.observe(dashboard,{childList:true,subtree:true});updateWarehouseSummaries();}
+if(dashboard){
+  const observer=new MutationObserver(()=>{
+    if(scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(()=>{
+      observer.disconnect();
+      updateWarehouseSummaries();
+      observer.observe(dashboard,{childList:true,subtree:true});
+      scheduled=false;
+    });
+  });
+  observer.observe(dashboard,{childList:true,subtree:true});
+  updateWarehouseSummaries();
+}
