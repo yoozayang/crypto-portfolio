@@ -161,3 +161,5 @@
 #prices .market-context{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
 #prices .price-box .price-remove{z-index:2}
 @media(max-width:650px){#prices .price-card-trailing{gap:4px}#prices .market-chevron{width:15px;font-size:18px}}
+
+.market-realized{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding:10px 0;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}.market-realized strong{font-size:14px;color:var(--text);text-align:right}
