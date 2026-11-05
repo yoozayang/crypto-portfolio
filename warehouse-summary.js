@@ -40,14 +40,8 @@ function updateWarehouseSummaries(){
     const first=title==='第一倉',positions=portfolio.warehouses?.[title]||[];
     const market=positions.reduce((sum,p)=>sum+marketValue(p,state.prices),0);
     const principal=metrics.firstCapital;
-    const opening=metrics.byWarehouse?.第一倉?.opening||31664;
-    const originalFx=Number(state.fxTwdPerUsd)||31.582;
-    const principalTwd=first?opening*originalFx+(principal-opening)*(currentFx||FALLBACK_FX):null;
     const currentTwd=currentFx?market*currentFx:null;
-    const money=v=>v==null?'台幣換算中…':'約 NT
-    const pnl=market-principal,pct=principal>0?pnl/principal*100:0;
-    const secondBase=metrics.secondOpeningAssetBaseline+metrics.postBaselineNetFlow;
-    const secondChange=market-secondBase;
+    const money=v=>v==null?'台幣換算中…':'約 NT$'+fmt(v,0)+(fxFallback?'（參考匯率）':'');
     const html=first?
       metric('投入本金',fmt(principal)+' U',null)+
       metric('目前市值',fmt(market)+' U',money(currentTwd)):
