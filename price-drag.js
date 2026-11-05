@@ -35,9 +35,9 @@ document.addEventListener('drop',e=>{
  e.preventDefault();
  const grid=target.closest('.price-grid');
  if(!grid||dragged.parentElement!==grid){clear();return;}
- const rect=target.getBoundingClientRect();
- const after=e.clientY>rect.top+rect.height/2 || (Math.abs(e.clientY-(rect.top+rect.height/2))<rect.height/3 && e.clientX>rect.left+rect.width/2);
- grid.insertBefore(dragged,after?target.nextSibling:target);
+ const cards=[...grid.querySelectorAll('.price-box')];
+ const from=cards.indexOf(dragged),to=cards.indexOf(target);
+ grid.insertBefore(dragged,from<to?target.nextSibling:target);
  savePriceOrder([...grid.querySelectorAll('.price-box')].map(codeOf));
  suppressUntil=Date.now()+500;
  clear();
