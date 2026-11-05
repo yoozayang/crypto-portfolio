@@ -184,3 +184,10 @@
 
 /* Warehouse summary: equal full-width cards on narrow screens */
 @media(max-width:650px){#dashboard .warehouse-metrics{display:grid;grid-template-columns:minmax(0,1fr)}#dashboard .warehouse-metrics>.warehouse-metric{grid-column:1 / -1;width:auto;min-width:0}}
+
+/* Emphasize primary USD amounts in warehouse summary cards */
+#dashboard .warehouse-metric-value{font-size:clamp(22px,2.2vw,30px);line-height:1.2;font-weight:800;letter-spacing:-.025em;overflow-wrap:anywhere}
+#dashboard .warehouse-metric-label{font-size:13px;margin-bottom:8px}
+#dashboard .warehouse-metric{padding:15px 17px}
+#dashboard .warehouse-metric .subtle{font-size:12px!important;line-height:1.5}
+@media(max-width:650px){#dashboard .warehouse-metric-value{font-size:clamp(24px,6vw,32px)}#dashboard .warehouse-metric{padding:16px 18px}}
