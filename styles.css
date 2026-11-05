@@ -115,3 +115,15 @@
 .dashboard-allocation{margin-top:10px;padding:13px 16px}.dashboard-allocation-heading{display:flex;align-items:baseline;gap:10px;font-weight:750;font-size:14px;margin-bottom:9px}.dashboard-allocation-heading span{font-size:11px;color:var(--muted);font-weight:400}.dashboard-allocation-bar{display:flex;height:10px;overflow:hidden;border-radius:99px;background:var(--line)}.dashboard-allocation-bar>span{height:100%;min-width:0}.dashboard-allocation-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:9px;font-size:12px}.dashboard-allocation-legend>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.dashboard-allocation-legend i{display:inline-block;width:8px;height:8px;border-radius:2px}.dashboard-allocation-legend strong{font-weight:750}@media(max-width:650px){.dashboard-allocation{padding:11px 13px}.dashboard-allocation-legend{gap:6px 12px;font-size:11px}}
 
 .dashboard-allocation-title{font-weight:750;font-size:14px;margin-bottom:12px}.dashboard-allocation-title span{font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}.dashboard-allocation-warehouses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.dashboard-allocation-warehouse{min-width:0}.dashboard-allocation-warehouse .dashboard-allocation-heading{margin-bottom:8px;font-size:13px}@media(max-width:650px){.dashboard-allocation-warehouses{grid-template-columns:1fr;gap:15px}}
+
+/* Two clearly separated allocation cards, with readable mobile labels */
+.dashboard-allocation{margin-top:14px;padding:0;background:none;border:0;box-shadow:none}
+.dashboard-allocation-title{padding:0 2px;margin:0 0 10px}
+.dashboard-allocation-warehouses{gap:14px;align-items:stretch}
+.dashboard-allocation-warehouse.card{padding:16px 18px;min-width:0;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.dashboard-allocation-warehouse .dashboard-allocation-heading{font-size:17px;font-weight:800;margin:0 0 14px}
+.dashboard-allocation-warehouse .dashboard-allocation-bar{height:13px;border-radius:8px}
+.dashboard-allocation-warehouse .dashboard-allocation-legend{display:flex;flex-wrap:wrap;gap:9px 16px;margin-top:14px}
+.dashboard-allocation-warehouse .dashboard-allocation-legend>span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;line-height:1.5;font-size:13px}
+.dashboard-allocation-warehouse .dashboard-allocation-legend strong{margin-left:2px}
+@media(max-width:650px){.dashboard-allocation{margin-top:12px}.dashboard-allocation-warehouses{grid-template-columns:1fr;gap:12px}.dashboard-allocation-warehouse.card{padding:15px 16px}.dashboard-allocation-warehouse .dashboard-allocation-heading{font-size:16px;margin-bottom:11px}.dashboard-allocation-warehouse .dashboard-allocation-legend{gap:8px 14px}.dashboard-allocation-warehouse .dashboard-allocation-legend>span{font-size:12px}}
