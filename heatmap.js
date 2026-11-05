@@ -1,12 +1,9 @@
-// Load the official TradingView widget only when the user expands the panel.
-document.addEventListener('click',event=>{
- const button=event.target.closest('#prices .heatmap-toggle');
- if(!button)return;
- const body=button.parentElement.querySelector('.heatmap-body');
- const opening=body.hidden;
- body.hidden=!opening;
- button.setAttribute('aria-expanded',String(opening));
- if(!opening||body.dataset.loaded)return;
+// Native <details> handles expand/collapse even if third-party widget fails.
+document.addEventListener('toggle',event=>{
+ const details=event.target;
+ if(!details.matches?.('#prices details.heatmap-card')||!details.open)return;
+ const body=details.querySelector('.heatmap-body');
+ if(!body||body.dataset.loaded)return;
  body.dataset.loaded='true';
  const host=document.createElement('div');
  host.className='tradingview-widget-container';
