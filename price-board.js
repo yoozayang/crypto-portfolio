@@ -1,6 +1,7 @@
 // Display-only coin list for the 目前幣價 tab. Stored in this browser and never touches asset_settings,
 // so which prices feed the portfolio calculations (priceEnabled assets) is unaffected by adding or removing here.
 const KEY='cryptoPortfolioPriceWatchlist';
+const ORDER_KEY='cryptoPortfolioPriceOrder';
 const BINANCE='https://api.binance.com/api/v3';
 const read=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)||'null');return {added:Array.isArray(v?.added)?v.added:[],removed:Array.isArray(v?.removed)?v.removed:[]};}catch{return {added:[],removed:[]};}};
 const write=v=>{try{localStorage.setItem(KEY,JSON.stringify(v));}catch{}};
@@ -8,7 +9,13 @@ const write=v=>{try{localStorage.setItem(KEY,JSON.stringify(v));}catch{}};
 export function watchlist(defaults){
   const {added,removed}=read(),shown=defaults.filter(d=>!removed.includes(d.code));
   for(const a of added)if(!shown.some(x=>x.code===a.code))shown.push({code:a.code,symbol:a.symbol,watchOnly:true});
+  let order=[];try{order=JSON.parse(localStorage.getItem(ORDER_KEY)||'[]');}catch{}
+  if(Array.isArray(order)&&order.length){const ranks=new Map(order.map((code,i)=>[code,i]));shown.sort((a,b)=>(ranks.get(a.code)??Number.MAX_SAFE_INTEGER)-(ranks.get(b.code)??Number.MAX_SAFE_INTEGER));}
   return shown;
+}
+export function savePriceOrder(codes){
+ const unique=[...new Set(codes.filter(x=>typeof x==='string'&&x))];
+ try{localStorage.setItem(ORDER_KEY,JSON.stringify(unique));return true;}catch{return false;}
 }
 export function addToWatchlist({code,symbol}){
   const v=read();v.removed=v.removed.filter(c=>c!==code);
