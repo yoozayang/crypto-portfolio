@@ -25,7 +25,7 @@ export function renderTrends(state){
  root.innerHTML='<div class="trend-head"><h2>資產趨勢</h2><p>追蹤資產配置與資金流向 · 單位U</p></div>'+
  trendChartMarkup(ledger)+
  '<div class="grid"><div class="card kpi"><div class="label">目前總資產</div><div class="value">'+fmt(total)+' U</div></div><div class="card kpi"><div class="label">前兩大資產占比</div><div class="value">'+fmt(concentration,1)+'%</div></div><div class="card kpi"><div class="label">累積入金</div><div class="value">'+fmt(deposits)+' U</div></div><div class="card kpi"><div class="label">累積出金</div><div class="value">'+fmt(withdrawals)+' U</div></div></div>'+
- '<div class="trend-grid section"><div class="card"><h2>目前資產組成</h2>'+(total?composition(ranked,total):'<p class="subtle">沒有資產資料</p>')+'</div><div class="card"><h2>倉位配置</h2>'+(total?composition(wh,total):'<p class="subtle">沒有倉位資料</p>')+'</div></div>'+
+ 
  '<div class="card section"><h2>最近資金流向</h2><p class="subtle">只列入金／出金，不將倉內轉帳算成新投入</p>'+(changes.length?'<div class="trend-flows">'+changes.map(x=>'<div><span>'+esc(x.date)+'</span><span>'+x.label+'</span><strong>'+fmt(x.value)+' U</strong></div>').join('')+'</div>':'<p class="subtle">尚無入出金記錄</p>')+'</div>';
 }
 
