@@ -77,38 +77,3 @@ if(dashboard){
   observer.observe(dashboard,{childList:true,subtree:true});
   updateWarehouseSummaries();
 }
-+fmt(v,0)+(fxFallback?'（參考匯率）':'');
-    const pnl=market-principal,pct=principal>0?pnl/principal*100:0;
-    const secondBase=metrics.secondOpeningAssetBaseline+metrics.postBaselineNetFlow;
-    const secondChange=market-secondBase;
-    const html=first?
-      metric('投入本金',fmt(principal)+' U',money(principalTwd))+
-      metric('目前市值',fmt(market)+' U',money(currentTwd))+
-      metric('整倉損益',(pnl>=0?'+':'')+fmt(pnl)+' U ('+(pct>=0?'+':'')+fmt(pct)+'%)',null,pnl>=0?'good':'bad'):
-      metric('期初資產基準',fmt(metrics.secondOpeningAssetBaseline)+' U',null)+
-      metric('目前市值',fmt(market)+' U',money(currentTwd))+
-      metric('資產增減',(secondChange>=0?'+':'')+fmt(secondChange)+' U',null,secondChange>=0?'good':'bad');
-    let box=card.querySelector('.warehouse-metrics');
-    if(!box){box=document.createElement('div');box.className='warehouse-metrics';card.querySelector('.fold-body')?.prepend(box)}
-    if(box&&box.innerHTML!==html)box.innerHTML=html;
-    const meta=card.querySelector('.fold-meta');
-    if(meta&&meta.textContent!=='')meta.textContent='';
-  });
-  if(!currentFx)void loadFx();
-}
-let scheduled=false;
-const dashboard=document.querySelector('#dashboard');
-if(dashboard){
-  const observer=new MutationObserver(()=>{
-    if(scheduled)return;
-    scheduled=true;
-    requestAnimationFrame(()=>{
-      observer.disconnect();
-      updateWarehouseSummaries();
-      observer.observe(dashboard,{childList:true,subtree:true});
-      scheduled=false;
-    });
-  });
-  observer.observe(dashboard,{childList:true,subtree:true});
-  updateWarehouseSummaries();
-}
