@@ -29,7 +29,7 @@ export function mountApp({state,seed,labels,setState}){
   function holdingCards(ps){return `<div class="holding-grid">${ps.map(p=>{const v=marketValue(p,state.prices),known=hasKnownCost(p),avg=known&&+p.qty>0?(+p.cost/+p.qty):null,u=known?v-p.cost:null,noQty=noQtyAsset(p.asset);const trades=[...reconciledPortfolio(state).replay.history].filter(t=>t.warehouse===p.warehouse&&t.asset===p.asset).reverse();const current=+state.prices[p.asset],pct=u!=null&&+p.cost>0?u/+p.cost*100:null;const history=trades.length?`<div class="holding-trade-tooltip" role="tooltip"><div class="holding-trade-title">${esc(p.asset)}交易紀錄</div>${trades.map(t=>`<div class="holding-trade-row"><span>${esc(String(t.date||'').slice(5).replace('-','/'))}</span><span class="${t.side==='買入'?'good':'bad'}">${esc(t.side)}</span><span>${fmt(t.price)}</span><span>${fmt(t.amount)} U</span></div>`).join('')}</div>`:'';return `<div class="holding-card ${history?'has-trades':''}" ${history?'tabindex="0" aria-label="'+esc(p.warehouse+' '+p.asset+'交易紀錄')+'"':''}><div class="holding-card-top"><strong>${assetLabel(p)}</strong>${p.legacy?'<span class="chip">歷史差額</span>':''}</div><div class="holding-value">${fmt(v)} U</div><div class="holding-meta holding-facts">${noQty?'<span>只管理金額</span>':`<span>數量 <b>${fmt(p.qty)}</b></span>`}${known?`<span>成本 <b>${fmt(p.cost)}</b></span>${avg!=null?`<span>均價 <b>${fmt(avg)}</b></span>`:''}`:''}${!noQty?`<span>現價 <b>${current>0?fmt(current,current<1?6:2):'—'}</b></span>`:''}</div>${u==null?'':`<div class="holding-pnl ${u>=0?'good':'bad'}">${signed(u)}${pct!=null?` (${pct>=0?'+':''}${fmt(pct)}%)`:''}</div>`}${history}</div>`}).join('')}</div>`}
   let twdRate=null,twdLoading=false;
   async function updateTwdValues(){
-    if(!document.querySelector('[data-warehouse-twd]'))return;
+    if(!document.querySelector('[data-twd-value]'))return;
     if(!twdRate&&!twdLoading){
       twdLoading=true;
       try{
@@ -40,17 +40,38 @@ export function mountApp({state,seed,labels,setState}){
       }catch(e){console.warn('TWD rate unavailable',e)}
       finally{twdLoading=false}
     }
-    document.querySelectorAll('[data-warehouse-twd]').forEach(el=>{
-      const usd=Number(el.dataset.warehouseTwd);
-      el.textContent=twdRate&&Number.isFinite(usd)?'約 NT$'+fmt(usd*twdRate,0):'台幣暫無資料';
-      if(twdRate)el.title='USD/TWD '+twdRate+'（USDT按1美元估算）';
+    document.querySelectorAll('[data-twd-value]').forEach(el=>{
+      const usd=Number(el.dataset.twdValue);
+      const kind=el.dataset.twdKind;
+      if(kind==='principal'){
+        const original=Number(el.dataset.twdOpening),originalFx=Number(el.dataset.twdOpeningFx);
+        const opening=Number(el.dataset.twdOpeningU);
+        if(Number.isFinite(original)&&Number.isFinite(originalFx)&&Number.isFinite(opening)){
+          const extra=usd-opening;
+          if(Math.abs(extra)<0.000001){
+            el.textContent='約 NT$'+fmt(original*originalFx,0);
+            el.title='原始投入以當時匯率 '+originalFx+' 換算';
+          }else if(twdRate){
+            el.textContent='約 NT$'+fmt(original*originalFx+extra*twdRate,0);
+            el.title='原始投入按歷史匯率 '+originalFx+'；後續淨入金暫以目前匯率 '+twdRate+' 估算';
+          }else el.textContent='台幣暫無資料';
+        }
+      }else{
+        el.textContent=twdRate&&Number.isFinite(usd)?'約 NT$'+fmt(usd*twdRate,0):'台幣暫無資料';
+        if(twdRate)el.title='目前USD/TWD '+twdRate+'（USDT按1美元估算）';
+      }
     });
   }
   function fold(name,ps){
     const market=ps.reduce((sum,p)=>sum+marketValue(p,state.prices),0);
-    const principal=name==='第一倉'?capitalMetrics(state,'第一倉').net:null;
-    const pnl=principal===null?null:market-principal,pct=principal>0?pnl/principal*100:null;const summary=name==='第一倉'?'投入 '+fmt(principal)+' U · 現值 '+fmt(market)+' U · 損益 '+(pnl>=0?'+':'')+fmt(pnl)+' U'+(pct===null?'':' ('+(pct>=0?'+':'')+fmt(pct,2)+'%)'):'現值 '+fmt(market)+' U';
-    return `<details class="fold-card" open><summary><span class="fold-title"><h2>${name}</h2><span class="fold-meta">${summary} · <span data-warehouse-twd="${market}">台幣換算中…</span></span></span></summary><div class="fold-body">${holdingCards(ps)}</div></details>`;
+    const first=name==='第一倉',capital=first?capitalMetrics(state,'第一倉'):null;
+    const principal=capital?.net;
+    const pnl=first?market-principal:null,pct=principal>0?pnl/principal*100:null;
+    const originalFx=Number(state.fxTwdPerUsd)||31.582;
+    const small=(value,kind,extra='')=>`<small class="subtle" data-twd-value="${value}" data-twd-kind="${kind}" ${extra}>台幣換算中…</small>`;
+    const invested=first?`投入 ${fmt(principal)} U ${small(principal,'principal',`data-twd-opening="${capital.opening}" data-twd-opening-u="${capital.opening}" data-twd-opening-fx="${originalFx}"`)} · `:'';
+    const result=first?` · 損益 <strong class="${pnl>=0?'good':'bad'}">${pnl>=0?'+':''}${fmt(pnl)} U (${pct>=0?'+':''}${fmt(pct,2)}%)</strong>`:'';
+    return `<details class="fold-card" open><summary><span class="fold-title"><h2>${name}</h2><span class="fold-meta">${invested}現值 ${fmt(market)} U ${small(market,'market')}${result}</span></span></summary><div class="fold-body">${holdingCards(ps)}</div></details>`;
   }
   function kpi(label,value,num){const help={'投入／比較基準':'第一倉使用持倉成本，第二倉使用期初資產基準加後續淨入金','資產增減':'目前總資產減去投入／比較基準；不等於完整歷史投資報酬','累計損益（估算）':'資產增減加上已實現損益，僅供個人追蹤參考'};return `<div class="card kpi" ${help[label]?'title="'+help[label]+'"':''}><div class="label">${label}</div><div class="value ${num>0?'good':num<0?'bad':''}">${value}</div></div>`}
   function assetSparkline(){
