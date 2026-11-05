@@ -33,9 +33,9 @@ function newsHTML(rows){return rows.length?'<div class="market-context-news">'+r
 async function expand(card){
  const code=card.querySelector('[data-market-coin]')?.dataset.marketCoin;if(!code)return;
  let panel=card.querySelector('.market-context');
- if(panel){panel.remove();card.classList.remove('market-expanded');return}
+ if(panel){panel.remove();card.classList.remove('market-expanded');card.setAttribute('aria-expanded','false');return}
  panel=document.createElement('div');panel.className='market-context';panel.innerHTML='<div class="subtle">正在取得市場資訊與新聞…</div>';
- card.append(panel);card.classList.add('market-expanded');
+ card.append(panel);card.classList.add('market-expanded');card.setAttribute('aria-expanded','true');
  const [m,n]=await Promise.allSettled([market(code),news(code)]);
  if(!panel.isConnected)return;
  panel.innerHTML='<h4>市場概況</h4>'+(m.status==='fulfilled'?marketHTML(m.value):'<p class="subtle">市場資訊暫時無法取得</p>')+'<h4>相關新聞／事件</h4>'+(n.status==='fulfilled'?newsHTML(n.value):'<p class="subtle">新聞來源暫時無法取得</p>')+'<div class="market-context-source">新聞為第三方來源，點擊標題閱讀原文</div>';
