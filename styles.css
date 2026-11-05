@@ -163,3 +163,17 @@
 @media(max-width:650px){#prices .price-card-trailing{gap:4px}#prices .market-chevron{width:15px;font-size:18px}}
 
 .market-realized{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding:10px 0;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}.market-realized strong{font-size:14px;color:var(--text);text-align:right}
+
+/* Collapsible full-market heatmap */
+#prices .heatmap-card{margin-top:16px;padding:0;overflow:hidden}
+#prices .heatmap-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:18px 20px;background:transparent;border:0;color:var(--text);font:inherit;font-weight:750;font-size:17px;text-align:left;cursor:pointer}
+#prices .heatmap-toggle small{font-size:12px;font-weight:400;color:var(--muted);margin-left:10px}
+#prices .heatmap-chevron{font-size:22px;color:var(--muted);transition:transform .2s}
+#prices .heatmap-toggle[aria-expanded=true] .heatmap-chevron{transform:rotate(180deg)}
+#prices .heatmap-body{padding:0 16px 14px}
+#prices .heatmap-body[hidden]{display:none}
+#prices .tradingview-widget-container{width:100%;height:490px;min-width:0}
+#prices .tradingview-widget-container__widget{height:calc(100% - 22px);width:100%}
+#prices .heatmap-credit{text-align:right;font-size:11px;padding-top:5px}
+#prices .heatmap-credit a{color:var(--muted)}
+@media(max-width:650px){#prices .heatmap-toggle{padding:15px;font-size:15px}#prices .heatmap-toggle small{display:block;margin:3px 0 0;font-size:11px}#prices .heatmap-body{padding:0 8px 10px}#prices .tradingview-widget-container{height:440px}}
